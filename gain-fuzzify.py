@@ -1,4 +1,5 @@
 from functools import partial
+import numpy as np
 
 def getTriangularMembership (start, tip, end, x):
 	if (x < start):
@@ -93,27 +94,26 @@ def infer (inferenceList, x, scales = {}):
 		return {k: scales[k]*inferenceList[k](x) for k in inferenceList}
 
 def rule (classS1, classS2):
-	return rulebase[S1][S2]
+	return rulebase[classS1][classS2]
 
 def fuzzify(s1,s2):
 	inferDictS1 = infer(inferenceS1,s1)
 	inferDictS2 = infer(inferenceS2,s2)
-	fuzzifiedMap = {}
-	
+	fuzzifiedMap = {"L": 0.0, "M": 0.0, "H": 0.0}
 	for i in inferDictS1:
 		for j in inferDictS2:
-			fuzzifiedMap[rule(i,j)] = min(inferenceS1[i],inferenceS2[j])
-
+		  fuzzifiedMap[rule(i,j)] = max(fuzzifiedMap[rule(i,j)] ,min(inferDictS1[i],inferDictS2[j]))
 	return fuzzifiedMap
 
-def defuzzify(L,M,H,interval,start,end):
+def defuzzify(scales,interval,start,end):
 	finalOutputNum = 0.0
 	finalOutputDen = 0.0
-	
-	for z in range(start,end,interval):
-		inferDict = infer(inferenceZ,z,L,M,H)
+	for z in np.arange(start,end,interval):
+		inferDict = infer(inferenceZ,z,scales)
 		finalOutputNum += z*max(inferDict.values())
 		finalOutputDen += max(inferDict.values())
-  	
-  	return (finalOutputNum/finalOutputDen)
+	return (finalOutputNum/finalOutputDen)
 
+def gain(S1, S2):
+	scales = fuzzify(S1, S2)
+	return defuzzify(scales, 0.1, -2, 6)
