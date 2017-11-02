@@ -94,3 +94,26 @@ def infer (inferenceList, x, scales = {}):
 
 def rule (classS1, classS2):
 	return rulebase[S1][S2]
+
+def fuzzify(s1,s2):
+	inferDictS1 = infer(inferenceS1,s1)
+	inferDictS2 = infer(inferenceS2,s2)
+	fuzzifiedMap = {}
+	
+	for i in inferDictS1:
+		for j in inferDictS2:
+			fuzzifiedMap[rule(i,j)] = min(inferenceS1[i],inferenceS2[j])
+
+	return fuzzifiedMap
+
+def defuzzify(L,M,H,interval,start,end):
+	finalOutputNum = 0.0
+	finalOutputDen = 0.0
+	
+	for z in range(start,end,interval):
+		inferDict = infer(inferenceZ,z,L,M,H)
+		finalOutputNum += z*max(inferDict.values())
+		finalOutputDen += max(inferDict.values())
+  	
+  	return (finalOutputNum/finalOutputDen)
+
