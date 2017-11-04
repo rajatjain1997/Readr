@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
-# from tensorflow.python import debug as tf_debug
+from tensorflow.python import debug as tf_debug
 
 mnist = input_data.read_data_sets("data/", one_hot=True)
 layers = [784, 30, 10]
@@ -65,7 +65,8 @@ def train_neural_network(x):
 		for epoch in range(maxEpochs):
 			for i in range(int(mnist.train.num_examples/batchSize)):
 				epoch_x, epoch_y = mnist.train.next_batch(batchSize)
-				l=sess.run([results, outputList[0]], feed_dict={x: epoch_x, y: epoch_y})
+				l=sess.run([results, outputList], feed_dict={x: epoch_x, y: epoch_y})
+				print(l[1][2])
 			res = sess.run(acct_res, feed_dict =
 				{
 					x: mnist.test.images[:1000],
