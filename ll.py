@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from gainfuzzify import *
+from gainfuzzify import gain
 import tensorflow as tf
 
 from tensorflow.examples.tutorials.mnist import input_data
@@ -67,18 +67,53 @@ result = [
 acct_mat = tf.equal(tf.argmax(out2, 1), tf.argmax(y, 1))
 acct_res = tf.reduce_sum(tf.cast(acct_mat, tf.float32))
 
-sess = tf.Session()
-sess.run(tf.global_variables_initializer())
+def checkAccuracy(sess, numTestingSamples):
+	return sess.run(acct_res, feed_dict =
+						   {x: mnist.test.images[:numTestingSamples],
+							y : mnist.test.labels[:numTestingSamples]})
 
-for i in range(10000):
-	batch_xs, batch_ys = mnist.train.next_batch(1)
-	l = sess.run([result,s1,s2], feed_dict = {x: batch_xs,
-								y : batch_ys})
-	# print(l[1], " ", l[2])
-	l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2])/2, dtype=tf.float32)))
-	# print("beta:", l)
-	if i % 100 == 0:
-		res = sess.run(acct_res, feed_dict =
-					   {x: mnist.test.images[:1000],
-						y : mnist.test.labels[:1000]})
-		print(res)
+def provideMnistTraining(sess, numTrainingSamples):
+
+	for i in range(numTrainingSamples):
+		batch_xs, batch_ys = mnist.train.next_batch(1)
+		l = sess.run([result,s1,s2], feed_dict = {x: batch_xs,
+									y : batch_ys})
+		# print(l[1], " ", l[2])
+		l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2])/2, dtype=tf.float32)))
+		# print("beta:", l)
+		if i % 100 == 0:
+			res = checkAccuracy(sess, 1000)
+			print(i/100 + 1, ": ", res)
+	# Storage Function Call here
+	print("MNIST training complete")
+
+def read(sess, imagepath):
+	# Image conversion goes here
+	image = imagepath
+	return sess.run(out2, feed_dict = {x: image})
+
+def reset(sess):
+	sess.run([
+		tf.assign(weight1, tf.truncated_normal([784, middle])),
+		tf.assign(bias1, tf.truncated_normal([1, middle])),
+		tf.assign(weight2, tf.truncated_normal([middle, 10])),
+		tf.assign(bias2, tf.truncated_normal([1, 10]))
+		])
+	# Storage Function Call here
+	print("Network Reset!")
+
+def session():
+	sess = tf.Session()
+	sess.run(tf.global_variables_initializer())
+	return sess
+
+def train(sess, imagepath, actualresult):
+	# Image conversion goes here
+	image = imagepath
+	l = sess.run([result, s1, s2], feed_dict = {x: image,
+									y:actualresult})
+	sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2])/2, dtype=tf.float32)))
+	# Storage Function Call here
+	print("Trained Model with the new image!")
+
+provideMnistTraining(session(), 10000)
