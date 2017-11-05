@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from gainfuzzify import gain
 import tensorflow as tf
+import numpy as np
 
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("data/", one_hot=True)
@@ -100,17 +101,26 @@ def provideMnistTraining(sess, numTrainingSamples, storeFileName):
 def read(sess, imagepath, restoreFileName):
 	# Image conversion goes here
 	image = imagepath
-	sess = restoreModel(sess,restoreFileName)
+	sess = restoreModel(sess, restoreFileName)
 	return sess.run(out2, feed_dict = {x: image})
 
-def reset(sess):
+def outputCharacter(sess, imagepath, restoreFileName):
+	output = read(sess, imagepath, restoreFileName)
+	index = np.argmax(output)
+	if (index < 10):
+		return index
+	else :
+		return chr(index+55)
+
+
+def reset(sess, storeFileName):
 	sess.run([
 		tf.assign(weight1, tf.truncated_normal([784, middle])),
 		tf.assign(bias1, tf.truncated_normal([1, middle])),
 		tf.assign(weight2, tf.truncated_normal([middle, 10])),
 		tf.assign(bias2, tf.truncated_normal([1, 10]))
 		])
-	# Storage Function Call here
+	storeModel(sess, storeFileName)
 	print("Network Reset!")
 
 def session():
@@ -128,4 +138,4 @@ def train(sess, imagepath, actualresult, storeFileName):
 	storeModel(sess,storeFileName)
 	print("Trained Model with the new image!")
 
-provideMnistTraining(session(), 1000, 'MnistTrainedModel')
+provideMnistTraining(session(), 10000, 'MnistTrainedModel')
