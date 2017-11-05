@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from gainfuzzify import gain
 import tensorflow as tf
+import numpy as np
 
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("data/", one_hot=True)
@@ -67,23 +68,36 @@ result = [
 acct_mat = tf.equal(tf.argmax(out2, 1), tf.argmax(y, 1))
 acct_res = tf.reduce_sum(tf.cast(acct_mat, tf.float32))
 
+conv_mat = tf.multiply(100.0, tf.subtract(1.0, tf.abs(tf.reduce_mean(diff, axis=[0]))))
+
 def checkAccuracy(sess, numTestingSamples):
 	return sess.run(acct_res, feed_dict =
 						   {x: mnist.test.images[:numTestingSamples],
 							y : mnist.test.labels[:numTestingSamples]})
 
-def provideMnistTraining(sess, numTrainingSamples):
+def checkConvergence(sess, numTestingSamples):
+	return sess.run(conv_mat, feed_dict = 
+							{x: [mnist.train.images[0]],
+							y : [mnist.train.labels[0]]})
 
-	for i in range(numTrainingSamples):
-		batch_xs, batch_ys = mnist.train.next_batch(1)
-		l = sess.run([result,s1,s2], feed_dict = {x: batch_xs,
-									y : batch_ys})
-		# print(l[1], " ", l[2])
-		l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2])/2, dtype=tf.float32)))
-		# print("beta:", l)
-		if i % 100 == 0:
-			res = checkAccuracy(sess, 1000)
-			print(i/100 + 1, ": ", res)
+def provideMnistTraining(sess):	
+	j = 0
+	while(True):
+		for i in range(1):
+			batch_xs = [mnist.train.images[i]]
+			batch_ys = [mnist.train.labels[i]]
+			l = sess.run([result,s1,s2], feed_dict = {x: batch_xs,
+										y : batch_ys})
+			# print(l[1], " ", l[2])
+			l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
+			# print("beta:", l)
+			if i % 100 == 0:
+				res = checkConvergence(sess, 1)
+				print(j,":",i/100 + 1, ": ", res)
+				if(np.mean(res)>=99.9):
+					break
+		j+=1
+
 	# Storage Function Call here
 	print("MNIST training complete")
 
@@ -116,4 +130,4 @@ def train(sess, imagepath, actualresult):
 	# Storage Function Call here
 	print("Trained Model with the new image!")
 
-provideMnistTraining(session(), 10000)
+provideMnistTraining(session())
