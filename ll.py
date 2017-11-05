@@ -72,7 +72,16 @@ def checkAccuracy(sess, numTestingSamples):
 						   {x: mnist.test.images[:numTestingSamples],
 							y : mnist.test.labels[:numTestingSamples]})
 
-def provideMnistTraining(sess, numTrainingSamples):
+def storeModel(session,fileName):
+    saver = tf.train.Saver()
+    saver.save(session,fileName)
+
+def restoreModel(session,fileName):
+    saver = tf.train.Saver()
+    saver.restore(session,fileName)
+    return session
+
+def provideMnistTraining(sess, numTrainingSamples, storeFileName):
 
 	for i in range(numTrainingSamples):
 		batch_xs, batch_ys = mnist.train.next_batch(1)
@@ -84,12 +93,14 @@ def provideMnistTraining(sess, numTrainingSamples):
 		if i % 100 == 0:
 			res = checkAccuracy(sess, 1000)
 			print(i/100 + 1, ": ", res)
-	# Storage Function Call here
+    
+	storeModel(sess,storeFileName)
 	print("MNIST training complete")
 
-def read(sess, imagepath):
+def read(sess, imagepath, restoreFileName):
 	# Image conversion goes here
 	image = imagepath
+	sess = restoreModel(sess,restoreFileName)
 	return sess.run(out2, feed_dict = {x: image})
 
 def reset(sess):
@@ -107,13 +118,14 @@ def session():
 	sess.run(tf.global_variables_initializer())
 	return sess
 
-def train(sess, imagepath, actualresult):
+def train(sess, imagepath, actualresult, storeFileName):
 	# Image conversion goes here
 	image = imagepath
 	l = sess.run([result, s1, s2], feed_dict = {x: image,
 									y:actualresult})
 	sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2])/2, dtype=tf.float32)))
-	# Storage Function Call here
+	
+	storeModel(sess,storeFileName)
 	print("Trained Model with the new image!")
 
-provideMnistTraining(session(), 10000)
+provideMnistTraining(session(), 1000, 'MnistTrainedModel')
