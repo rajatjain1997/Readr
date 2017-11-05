@@ -23,10 +23,10 @@ bias2 = tf.Variable(tf.truncated_normal([1, 10]))
 
 
 def logSigmoid(x):
-    return tf.divide(tf.constant(1.0), tf.add(tf.constant(1.0), tf.exp(tf.negative(tf.multiply(beta,x)))))
+	return tf.divide(tf.constant(1.0), tf.add(tf.constant(1.0), tf.exp(tf.negative(tf.multiply(beta,x)))))
 
 def diffLogSigmoid(x):
-    return tf.multiply(beta, tf.multiply(logSigmoid(x), tf.subtract(tf.constant(1.0), logSigmoid(x))))
+	return tf.multiply(beta, tf.multiply(logSigmoid(x), tf.subtract(tf.constant(1.0), logSigmoid(x))))
 
 
 net1 = tf.add(tf.matmul(x, weight1), bias1)
@@ -46,20 +46,22 @@ deltaWeight1 = tf.matmul(tf.transpose(x), S1)
 
 s1 = tf.reduce_mean(S1)
 s2 = tf.reduce_mean(S2)
-
-tf.assign(beta,gain(s1,s2)) 
+s1Abs = tf.reduce_mean(tf.abs(S1))
+s2Abs = tf.reduce_mean(tf.abs(S2))
+s1 = tf.cond((tf.less(s1,0)), lambda: tf.negative(s1Abs), lambda: s1Abs)
+s2 = tf.cond((tf.less(s2,0)), lambda: tf.negative(s2Abs), lambda: s2Abs)
 
 result = [
-    tf.assign(weight1,
-            tf.subtract(weight1, tf.multiply(learningRate, deltaWeight1)))
+	tf.assign(weight1,
+			tf.add(weight1, tf.multiply(learningRate, deltaWeight1)))
   , tf.assign(bias1,
-            tf.subtract(bias1, tf.multiply(learningRate,
-                               tf.reduce_mean(deltaBias1, axis=[0]))))
+			tf.add(bias1, tf.multiply(learningRate,
+							   tf.reduce_mean(deltaBias1, axis=[0]))))
   , tf.assign(weight2,
-            tf.subtract(weight2, tf.multiply(learningRate, deltaWeight2)))
+			tf.add(weight2, tf.multiply(learningRate, deltaWeight2)))
   , tf.assign(bias2,
-            tf.subtract(bias2, tf.multiply(learningRate,
-                               tf.reduce_mean(deltaBias2, axis=[0]))))
+			tf.add(bias2, tf.multiply(learningRate,
+							   tf.reduce_mean(deltaBias2, axis=[0]))))
 ]
 
 acct_mat = tf.equal(tf.argmax(out2, 1), tf.argmax(y, 1))
@@ -69,12 +71,14 @@ sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
 for i in range(10000):
-    batch_xs, batch_ys = mnist.train.next_batch(10)
-    l = sess.run([result,beta], feed_dict = {x: batch_xs,
-                                y : batch_ys})
-    print(l[1])
-    if i % 1000 == 0:
-        res = sess.run(acct_res, feed_dict =
-                       {x: mnist.test.images[:1000],
-                        y : mnist.test.labels[:1000]})
-        print(res)
+	batch_xs, batch_ys = mnist.train.next_batch(1)
+	l = sess.run([result,s1,s2], feed_dict = {x: batch_xs,
+								y : batch_ys})
+	# print(l[1], " ", l[2])
+	l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2])/2, dtype=tf.float32)))
+	# print("beta:", l)
+	if i % 100 == 0:
+		res = sess.run(acct_res, feed_dict =
+					   {x: mnist.test.images[:1000],
+						y : mnist.test.labels[:1000]})
+		print(res)
