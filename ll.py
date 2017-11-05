@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from image_conversion import convert
 from gainfuzzify import gain
 import tensorflow as tf
 import numpy as np
@@ -100,7 +101,9 @@ def provideMnistTraining(sess, numTrainingSamples, storeFileName):
 
 def read(sess, imagepath, restoreFileName):
 	# Image conversion goes here
-	image = imagepath
+	image = convert(imagepath)
+	# Stil need to test it Coz we sort of don't know the representation of the mnist dataset
+	# leo says that 0 is considered white and 255 is considered black. Chutiya.
 	sess = restoreModel(sess, restoreFileName)
 	return sess.run(out2, feed_dict = {x: image})
 
