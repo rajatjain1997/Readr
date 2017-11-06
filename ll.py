@@ -69,20 +69,28 @@ result = [
 acct_mat = tf.equal(tf.argmax(out2, 1), tf.argmax(y, 1))
 acct_res = tf.reduce_sum(tf.cast(acct_mat, tf.float32))
 
+conv_res = tf.multiply(100.0, tf.subtract(1.0, tf.abs(tf.reduce_mean(diff, axis=[0]))))
+
 def checkAccuracy(sess, numTestingSamples):
 	return sess.run(acct_res, feed_dict =
 						   {x: mnist.test.images[:numTestingSamples],
 							y : mnist.test.labels[:numTestingSamples]})
 
+def checkConvergence(sess, numTestingSamples):
+	return sess.run(conv_mat, feed_dict = 
+							{x: [mnist.train.images[0]],
+							y : [mnist.train.labels[0]]})
 
-def provideMnistTraining(sess, numTrainingSamples):
+
+def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = True):
 
 	for i in range(numTrainingSamples):
 		batch_xs, batch_ys = mnist.train.next_batch(1)
 		l = sess.run([result,s1,s2], feed_dict = {x: batch_xs,
 									y : batch_ys})
 		# print(l[1], " ", l[2])
-		l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2])/2, dtype=tf.float32)))
+		if enableGainFuzzifization:
+			l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2])/2, dtype=tf.float32)))
 		# print("beta:", l)
 		if i % 100 == 0:
 			res = checkAccuracy(sess, 1000)
@@ -91,7 +99,7 @@ def provideMnistTraining(sess, numTrainingSamples):
 
 def read(sess, imagepath):
 	# Image conversion goes here
-	image = convert(imagepath)
+	image = [convert(imagepath)]
 	# Stil need to test it Coz we sort of don't know the representation of the mnist dataset
 	# leo says that 0 is considered white and 255 is considered black. Chutiya.
 	return sess.run(out2, feed_dict = {x: image})
@@ -130,10 +138,11 @@ def storeModel(session,fileName):
     saver.save(session,fileName)
 
 def train(sess, imagepath, actualresult):
-	image = convert(imagepath)
+	image = [convert(imagepath)]
 	l = sess.run([result, s1, s2], feed_dict = {x: image,
 									y:actualresult})
 	sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2])/2, dtype=tf.float32)))
 	print("Trained Model with the new image!")
 
-provideMnistTraining(session(), 10000, 'MnistTrainedModel')
+sess = session()
+provideMnistTraining(sess, 10000, False)
