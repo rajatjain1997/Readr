@@ -74,16 +74,8 @@ def checkAccuracy(sess, numTestingSamples):
 						   {x: mnist.test.images[:numTestingSamples],
 							y : mnist.test.labels[:numTestingSamples]})
 
-def storeModel(session,fileName):
-    saver = tf.train.Saver()
-    saver.save(session,fileName)
 
-def restoreModel(session,fileName):
-    saver = tf.train.Saver()
-    saver.restore(session,fileName)
-    return session
-
-def provideMnistTraining(sess, numTrainingSamples, storeFileName):
+def provideMnistTraining(sess, numTrainingSamples):
 
 	for i in range(numTrainingSamples):
 		batch_xs, batch_ys = mnist.train.next_batch(1)
@@ -95,20 +87,17 @@ def provideMnistTraining(sess, numTrainingSamples, storeFileName):
 		if i % 100 == 0:
 			res = checkAccuracy(sess, 1000)
 			print(i/100 + 1, ": ", res)
-    
-	storeModel(sess,storeFileName)
 	print("MNIST training complete")
 
-def read(sess, imagepath, restoreFileName):
+def read(sess, imagepath):
 	# Image conversion goes here
 	image = convert(imagepath)
 	# Stil need to test it Coz we sort of don't know the representation of the mnist dataset
 	# leo says that 0 is considered white and 255 is considered black. Chutiya.
-	sess = restoreModel(sess, restoreFileName)
 	return sess.run(out2, feed_dict = {x: image})
 
-def outputCharacter(sess, imagepath, restoreFileName):
-	output = read(sess, imagepath, restoreFileName)
+def outputCharacter(sess, imagepath):
+	output = read(sess, imagepath)
 	index = np.argmax(output)
 	if (index < 10):
 		return index
@@ -116,29 +105,35 @@ def outputCharacter(sess, imagepath, restoreFileName):
 		return chr(index+55)
 
 
-def reset(sess, storeFileName):
+def reset(sess):
 	sess.run([
 		tf.assign(weight1, tf.truncated_normal([784, middle])),
 		tf.assign(bias1, tf.truncated_normal([1, middle])),
 		tf.assign(weight2, tf.truncated_normal([middle, 10])),
 		tf.assign(bias2, tf.truncated_normal([1, 10]))
 		])
-	storeModel(sess, storeFileName)
 	print("Network Reset!")
+
+
+def restoreModel(session,fileName):
+    saver = tf.train.Saver()
+    saver.restore(session,fileName)
+    return session
 
 def session():
 	sess = tf.Session()
 	sess.run(tf.global_variables_initializer())
 	return sess
 
-def train(sess, imagepath, actualresult, storeFileName):
-	# Image conversion goes here
-	image = imagepath
+def storeModel(session,fileName):
+    saver = tf.train.Saver()
+    saver.save(session,fileName)
+
+def train(sess, imagepath, actualresult):
+	image = convert(imagepath)
 	l = sess.run([result, s1, s2], feed_dict = {x: image,
 									y:actualresult})
 	sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2])/2, dtype=tf.float32)))
-	
-	storeModel(sess,storeFileName)
 	print("Trained Model with the new image!")
 
 provideMnistTraining(session(), 10000, 'MnistTrainedModel')
