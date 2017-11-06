@@ -104,7 +104,7 @@ def invert():
 	for i in range(img.shape[0]):
 		for j in range(img.shape[1]):
 			if img[i][j]==0:
-				img[i][j]=255
+				img[i][j]=1
 			else:
 				img[i][j]=0
 
@@ -119,6 +119,7 @@ def convertToRowMajor():
 	return x
 
 def convert(filename):
+	global img
 	readGrayScaleImage(filename)
 	applyThreshhold(100)
 	removeEmptyRows()

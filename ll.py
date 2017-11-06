@@ -86,7 +86,11 @@ def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = Tru
 
 	for i in range(numTrainingSamples):
 		batch_xs, batch_ys = mnist.train.next_batch(1)
-		l = sess.run([result,s1,s2], feed_dict = {x: batch_xs,
+		batch_xs = np.array(batch_xs)
+		indices =  batch_xs > 0.5
+		batch_xs = np.zeros_like(batch_xs)
+		batch_xs[indices] = 1
+		l = sess.run([result,s1,s2], feed_dict = {x: np.array(batch_xs),
 									y : batch_ys})
 		# print(l[1], " ", l[2])
 		if enableGainFuzzifization:
