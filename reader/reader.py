@@ -1,16 +1,17 @@
 #!/usr/bin/env python
-from image_conversion import convert
-from gainfuzzify import gain
+from reader.image_conversion import convert
+from reader.gainfuzzify import gain
 import tensorflow as tf
 import numpy as np
 
 from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets("../data/", one_hot=True)
+mnist = input_data.read_data_sets("./data/", one_hot=True)
 
 x = tf.placeholder(tf.float32, [None, 784])
 y = tf.placeholder(tf.float32, [None, 10])
 learningRate = tf.constant(0.5)
 beta = tf.Variable(1.0)
+momentum = tf.Variable(0.0)
 
 middle = 30
 # weight1 = tf.Variable(tf.random_normal([784, middle]))
@@ -23,6 +24,10 @@ bias1 = tf.Variable(tf.truncated_normal([1, middle]))
 weight2 = tf.Variable(tf.truncated_normal([middle, 10]))
 bias2 = tf.Variable(tf.truncated_normal([1, 10]))
 
+oldDeltaWeight1 = tf.Variable(tf.zeros([784, middle], dtype=tf.float32))
+oldDeltaBias1 = tf.Variable(tf.zeros([1, middle], dtype=tf.float32))
+oldDeltaWeight2 = tf.Variable(tf.zeros([middle, 10], dtype=tf.float32))
+oldDeltaBias2 = tf.Variable(tf.zeros([1, 10], dtype=tf.float32))
 
 def logSigmoid(x):
 	return tf.divide(tf.constant(1.0), tf.add(tf.constant(1.0), tf.exp(tf.negative(tf.multiply(beta,x)))))
@@ -53,7 +58,7 @@ s2Abs = tf.reduce_mean(tf.abs(S2))
 s1 = tf.cond((tf.less(s1,0)), lambda: tf.negative(s1Abs), lambda: s1Abs)
 s2 = tf.cond((tf.less(s2,0)), lambda: tf.negative(s2Abs), lambda: s2Abs)
 
-result = [
+generalResult = [
 	tf.assign(weight1,
 			tf.add(weight1, tf.multiply(learningRate, deltaWeight1)))
   , tf.assign(bias1,
@@ -66,39 +71,63 @@ result = [
 							   tf.reduce_mean(deltaBias2, axis=[0]))))
 ]
 
+momentumResult = [
+	tf.assign(weight1,
+			tf.add(weight1, tf.multiply(learningRate, tf.add(deltaWeight1, tf.multiply(momentum, oldDeltaWeight1))))),
+	tf.assign(bias1,
+			tf.add(bias1, tf.multiply(learningRate,
+							   tf.add(tf.reduce_mean(deltaBias1, axis=[0]), tf.multiply(momentum, tf.reduce_mean(oldDeltaBias1, axis=[0])))))),
+	tf.assign(weight2,
+			tf.add(weight2, tf.multiply(learningRate, tf.add(deltaWeight2, tf.multiply(momentum, oldDeltaWeight2))))),
+	tf.assign(bias2,
+			tf.add(bias2, tf.multiply(learningRate,
+							   tf.add(tf.reduce_mean(deltaBias2, axis=[0]), tf.multiply(momentum, tf.reduce_mean(oldDeltaBias2, axis=[0])))))),
+	tf.assign(oldDeltaWeight1, deltaWeight1),
+	tf.assign(oldDeltaBias1, deltaBias1),
+	tf.assign(oldDeltaWeight2, deltaWeight2),
+	tf.assign(oldDeltaBias2, deltaBias2)
+]
+
 acct_mat = tf.equal(tf.argmax(out2, 1), tf.argmax(y, 1))
 acct_res = tf.reduce_sum(tf.cast(acct_mat, tf.float32))
 
-conv_res = tf.multiply(100.0, tf.subtract(1.0, tf.abs(tf.reduce_mean(diff, axis=[0]))))
+conv_mat = tf.multiply(100.0, tf.subtract(1.0, tf.abs(tf.reduce_mean(diff, axis=[0]))))
+conv_res = tf.reduce_min(conv_mat)
 
 def checkAccuracy(sess, numTestingSamples):
 	return sess.run(acct_res, feed_dict =
 						   {x: mnist.test.images[:numTestingSamples],
 							y : mnist.test.labels[:numTestingSamples]})
 
-def checkConvergence(sess, numTestingSamples):
-	return sess.run(conv_mat, feed_dict = 
-							{x: [mnist.train.images[0]],
-							y : [mnist.train.labels[0]]})
+def checkConvergence(sess, image, result):
+	return sess.run(conv_res, feed_dict = 
+							{x: image,
+							y : result})
 
 
-def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = True):
-
-	for i in range(numTrainingSamples):
-		batch_xs, batch_ys = mnist.train.next_batch(1)
-		batch_xs = np.array(batch_xs)
-		indices =  batch_xs > 0.5
-		batch_xs = np.zeros_like(batch_xs)
-		batch_xs[indices] = 1
-		l = sess.run([result,s1,s2], feed_dict = {x: np.array(batch_xs),
-									y : batch_ys})
-		# print(l[1], " ", l[2])
+def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = True, momentumConstant = 0.0):
+	result = generalResult
+	if(momentumConstant > 0.0):
+		sess.run(tf.assign(momentum, momentumConstant))
+		result = momentumResult
+	convergence = 0.0
+	imageDataset = np.array(mnist.train.images[:numTrainingSamples])
+	indices = imageDataset > 0.5
+	imageDataset = np.zeros_like(imageDataset)
+	imageDataset[indices] = 1
+	resultDataset = mnist.train.labels[:numTrainingSamples]
+	while convergence < 90.0:
+		l = sess.run([result,s1,s2], feed_dict = {x: imageDataset,
+										y : resultDataset})
 		if enableGainFuzzifization:
-			l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2])/2, dtype=tf.float32)))
-		# print("beta:", l)
-		if i % 100 == 0:
-			res = checkAccuracy(sess, 1000)
-			print(i/100 + 1, ": ", res)
+			l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
+		print("beta:", l)
+		convergence = checkConvergence(sess, imageDataset, resultDataset)
+		print(convergence)
+	print(sess.run(conv_mat, feed_dict = {
+		x: imageDataset,
+		y: resultDataset
+		}))
 	print("MNIST training complete")
 
 def read(sess, imagepath):
@@ -143,10 +172,22 @@ def storeModel(session,fileName):
 
 def train(sess, imagepath, actualresult):
 	image = [convert(imagepath)]
-	l = sess.run([result, s1, s2], feed_dict = {x: image,
-									y:actualresult})
-	sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2])/2, dtype=tf.float32)))
+	result = np.zeros(10)
+	result[actualresult] = 1.0
+	result = [result]
+	convergence = 0.0
+	j = 0
+	while(np.amin(np.array(convergence)) < 99.8):
+		j+=1
+		l = sess.run([generalResult, s1, s2], feed_dict = {x: image,
+										y:result})
+		sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
+		convergence = checkConvergence(sess, image, result)
+		print(convergence)
 	print("Trained Model with the new image!")
+	return j
 
 sess = session()
-provideMnistTraining(sess, 10000, False)
+# provideMnistTraining(sess, 100, False)
+# provideMnistTraining(sess, 10)
+# provideMnistTraining(sess, 10000, False, 0.6)
