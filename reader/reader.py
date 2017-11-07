@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-from image_conversion import convert
-from gainfuzzify import gain
+from reader.image_conversion import convert
+from reader.gainfuzzify import gain
 import tensorflow as tf
 import numpy as np
 
 from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets("../data/", one_hot=True)
+mnist = input_data.read_data_sets("./data/", one_hot=True)
 
 x = tf.placeholder(tf.float32, [None, 784])
 y = tf.placeholder(tf.float32, [None, 10])
@@ -110,21 +110,24 @@ def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = Tru
 	if(momentumConstant > 0.0):
 		sess.run(tf.assign(momentum, momentumConstant))
 		result = momentumResult
-	for i in range(numTrainingSamples):
-		batch_xs, batch_ys = mnist.train.next_batch(1)
-		batch_xs = np.array(batch_xs)
-		indices =  batch_xs > 0.5
-		batch_xs = np.zeros_like(batch_xs)
-		batch_xs[indices] = 1
-		l = sess.run([result,s1,s2], feed_dict = {x: np.array(batch_xs),
-									y : batch_ys})
-		# print(l[1], " ", l[2])
+	convergence = 0.0
+	imageDataset = np.array(mnist.train.images[:numTrainingSamples])
+	indices = imageDataset > 0.5
+	imageDataset = np.zeros_like(imageDataset)
+	imageDataset[indices] = 1
+	resultDataset = mnist.train.labels[:numTrainingSamples]
+	while convergence < 90.0:
+		l = sess.run([result,s1,s2], feed_dict = {x: imageDataset,
+										y : resultDataset})
 		if enableGainFuzzifization:
 			l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
-		# print("beta:", l)
-		if i % 100 == 0:
-			res = checkAccuracy(sess, 1000)
-			print(i/100 + 1, ": ", res)
+		print("beta:", l)
+		convergence = checkConvergence(sess, imageDataset, resultDataset)
+		print(convergence)
+	print(sess.run(conv_mat, feed_dict = {
+		x: imageDataset,
+		y: resultDataset
+		}))
 	print("MNIST training complete")
 
 def read(sess, imagepath):
@@ -173,15 +176,18 @@ def train(sess, imagepath, actualresult):
 	result[actualresult] = 1.0
 	result = [result]
 	convergence = 0.0
+	j = 0
 	while(np.amin(np.array(convergence)) < 99.8):
+		j+=1
 		l = sess.run([generalResult, s1, s2], feed_dict = {x: image,
 										y:result})
 		sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
 		convergence = checkConvergence(sess, image, result)
 		print(convergence)
 	print("Trained Model with the new image!")
+	return j
 
 sess = session()
-# provideMnistTraining(sess, 10000, False)
-# provideMnistTraining(sess, 10000)
+# provideMnistTraining(sess, 100, False)
+# provideMnistTraining(sess, 10)
 # provideMnistTraining(sess, 10000, False, 0.6)

@@ -56,17 +56,17 @@ def getTrapMembership (start, tip1, tip2, end, x):
 		return 0
 
 inferenceS1 = {
-	"NB": partial(getLineMembership, (-0.0010), (-0.0020)),
-	"NS": partial(getTriangularMembership, (-0.0020), (-0.0010), (0.0000)),
-	"Z":  partial(getTriangularMembership, (-0.0010), (0.0000), (0.0010)),
-	"PS": partial(getTriangularMembership, (0.0000), (0.0010), (0.0020)),
-	"PB": partial(getLineMembership, (0.0010), (0.0020))
+	"NB": partial(getLineMembership, (-0.010), (-0.020)),
+	"NS": partial(getTriangularMembership, (-0.020), (-0.010), (0.000)),
+	"Z":  partial(getTriangularMembership, (-0.010), (0.000), (0.010)),
+	"PS": partial(getTriangularMembership, (0.000), (0.010), (0.020)),
+	"PB": partial(getLineMembership, (0.010), (0.020))
 }
 
 inferenceS2 = {
-	"N": partial(getLineMembership, (0.0000), (-0.0010)),
-	"Z": partial(getTriangularMembership, (-0.0010), (0.0000), (0.0010)),
-	"P": partial(getLineMembership, (0.0000), (0.0010))
+	"N": partial(getLineMembership, (0.000), (-0.010)),
+	"Z": partial(getTriangularMembership, (-0.010), (0.000), (0.010)),
+	"P": partial(getLineMembership, (0.000), (0.010))
 }
 
 inferenceZ = {
