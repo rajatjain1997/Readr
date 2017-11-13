@@ -170,7 +170,8 @@ def storeModel(session,fileName):
     saver = tf.train.Saver()
     saver.save(session,fileName)
 
-def train(sess, imagepath, actualresult):
+def train(sess, imagepath, actualresult,enableGainFuzzification= True):
+	arr=[]
 	image = [convert(imagepath)]
 	result = np.zeros(10)
 	result[actualresult] = 1.0
@@ -181,13 +182,15 @@ def train(sess, imagepath, actualresult):
 		j+=1
 		l = sess.run([generalResult, s1, s2], feed_dict = {x: image,
 										y:result})
-		sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
+		if enableGainFuzzification:
+			sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
 		convergence = checkConvergence(sess, image, result)
 		print(convergence)
+		arr.append(convergence)
 	print("Trained Model with the new image!")
-	return j
+	return arr
 
-sess = session()
+# sess = session()
 # provideMnistTraining(sess, 100, False)
 # provideMnistTraining(sess, 10)
 # provideMnistTraining(sess, 10000, False, 0.6)
