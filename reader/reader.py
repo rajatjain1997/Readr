@@ -106,6 +106,7 @@ def checkConvergence(sess, image, result):
 
 
 def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = True, momentumConstant = 0.0):
+	convergenceOutputArr=[]
 	result = generalResult
 	if(momentumConstant > 0.0):
 		sess.run(tf.assign(momentum, momentumConstant))
@@ -116,19 +117,23 @@ def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = Tru
 	imageDataset = np.zeros_like(imageDataset)
 	imageDataset[indices] = 1
 	resultDataset = mnist.train.labels[:numTrainingSamples]
+	
 	while convergence < 90.0:
 		l = sess.run([result,s1,s2], feed_dict = {x: imageDataset,
 										y : resultDataset})
 		if enableGainFuzzifization:
 			l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
-		print("beta:", l)
+		# print("beta:", l)
 		convergence = checkConvergence(sess, imageDataset, resultDataset)
+		convergenceOutputArr.append(convergence)
 		print(convergence)
+	
 	print(sess.run(conv_mat, feed_dict = {
 		x: imageDataset,
 		y: resultDataset
 		}))
 	print("MNIST training complete")
+	return convergenceOutputArr
 
 def read(sess, imagepath):
 	# Image conversion goes here
