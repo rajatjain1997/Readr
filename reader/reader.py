@@ -107,6 +107,7 @@ def checkConvergence(sess, image, result):
 
 
 def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = True, momentumConstant = 0.0):
+	convergenceOutputArr=[]
 	result = generalResult
 	if(momentumConstant > 0.0):
 		sess.run(tf.assign(momentum, momentumConstant))
@@ -117,19 +118,23 @@ def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = Tru
 	imageDataset = np.zeros_like(imageDataset)
 	imageDataset[indices] = 1
 	resultDataset = mnist.train.labels[:numTrainingSamples]
+	
 	while convergence < 90.0:
 		l = sess.run([result,s1,s2], feed_dict = {x: imageDataset,
 										y : resultDataset})
 		if enableGainFuzzifization:
 			l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
-		print("beta:", l)
+		# print("beta:", l)
 		convergence = checkConvergence(sess, imageDataset, resultDataset)
+		convergenceOutputArr.append(convergence)
 		print(convergence)
+	
 	print(sess.run(conv_mat, feed_dict = {
 		x: imageDataset,
 		y: resultDataset
 		}))
 	print("MNIST training complete")
+	return convergenceOutputArr
 
 def read(sess, imagepath):
 	# Image conversion goes here
@@ -159,8 +164,13 @@ def reset(sess):
 
 def restoreModel(session,fileName):
     saver = tf.train.Saver()
-    saver.restore(session,fileName)
+    unzip = zipfile.ZipFile("./"+filename+".zip")
+	unzip.extractall("./temp")
+ 	unzip.close()
+	saver.restore(sess,"./temp/"+filename)
+	shutil.rmtree("./temp")
     return session
+
 
 def session():
 	sess = tf.Session()
@@ -169,9 +179,13 @@ def session():
 
 def storeModel(session,fileName):
     saver = tf.train.Saver()
-    saver.save(session,fileName)
+    saver.save(session,"./temp/"+filename)
+	shutil.make_archive(filename, 'zip', "./temp")
+	shutil.rmtree("./temp")
+    
 
-def train(sess, imagepath, actualresult):
+def train(sess, imagepath, actualresult,enableGainFuzzification= True):
+	arr=[]
 	image = [convert(imagepath)]
 	result = np.zeros(10)
 	result[actualresult] = 1.0
@@ -191,12 +205,15 @@ def train(sess, imagepath, actualresult):
 		# sess.run(tf.assign(weight2, fuzzyBPdeltaW[1]))
 		
 		sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
+		if enableGainFuzzification:
+			sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
 		convergence = checkConvergence(sess, image, result)
 		print(convergence)
+		arr.append(convergence)
 	print("Trained Model with the new image!")
-	return j
+	return arr
 
-sess = session()
+# sess = session()
 # provideMnistTraining(sess, 100, False)
 # provideMnistTraining(sess, 10)
 # provideMnistTraining(sess, 10000, False, 0.6)
