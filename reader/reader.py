@@ -186,7 +186,7 @@ def storeModel(session,fileName):
 	shutil.rmtree("./temp")
 
 
-def train(sess, imagepath, actualresult,enableGainFuzzification= True):
+def train(sess, imagepath, actualresult,enableGainFuzzification= True, enableFuzzyBP=True):
 	arr=[]
 	image = [convert(imagepath)]
 	result = np.zeros(10)
@@ -199,16 +199,18 @@ def train(sess, imagepath, actualresult,enableGainFuzzification= True):
 		l = sess.run([generalResult, s1, s2], feed_dict = {x: image,
 										y:result})
 		
-		# fuzzyBPdeltaW = FuzzyBP(image[0], [weight1, weight2], np.array(result[0]), sess)
-		# sess.run(tf.assign(oldDeltaWeight1, deltaWeight1))
-		# sess.run(tf.assign(oldDeltaWeight2, deltaWeight2))
-		# sess.run(tf.assign(deltaWeight2, tf.subtract(fuzzyBPdeltaW[1], weight2)))
-		# sess.run(tf.assign(weight1, fuzzyBPdeltaW[0]))
-		# sess.run(tf.assign(weight2, fuzzyBPdeltaW[1]))
-		
-		sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
+		if enableFuzzyBP:
+			fuzzyBPWeights = FuzzyBP(image, [l[0][0], l[0][2]], actualresult)
+			sess.run(tf.assign(weight1,tf.constant(fuzzyBPWeights[0])))
+			sess.run(tf.assign(weight2,tf.constant(fuzzyBPWeights[1])))
+			# sess.run(tf.assign(oldDeltaWeight1, deltaWeight1))
+			# sess.run(tf.assign(oldDeltaWeight2, deltaWeight2))
+			# sess.run(tf.assign(deltaWeight2, tf.subtract(fuzzyBPdeltaW[1], weight2)))
+			# sess.run(tf.assign(weight1, fuzzyBPdeltaW[0]))
+			# sess.run(tf.assign(weight2, fuzzyBPdeltaW[1]))
 		if enableGainFuzzification:
 			sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
+		
 		convergence = checkConvergence(sess, image, result)
 		print(convergence)
 		arr.append(convergence)
@@ -216,6 +218,7 @@ def train(sess, imagepath, actualresult,enableGainFuzzification= True):
 	return arr
 
 # sess = session()
-# provideMnistTraining(sess, 100, False)
+# train(sess,'./../test_pics/8.jpg',8)
+# provideMnistTraining(sess, 10, False)
 # provideMnistTraining(sess, 10)
 # provideMnistTraining(sess, 10000, False, 0.6)
