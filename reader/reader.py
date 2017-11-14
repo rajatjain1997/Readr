@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-from reader.image_conversion import convert
-from reader.gainfuzzify import gain
+from image_conversion import convert
+from gainfuzzify import gain
+from fuzzyBP import FuzzyBP
 import tensorflow as tf
 import numpy as np
 
@@ -181,6 +182,14 @@ def train(sess, imagepath, actualresult):
 		j+=1
 		l = sess.run([generalResult, s1, s2], feed_dict = {x: image,
 										y:result})
+		
+		# fuzzyBPdeltaW = FuzzyBP(image[0], [weight1, weight2], np.array(result[0]), sess)
+		# sess.run(tf.assign(oldDeltaWeight1, deltaWeight1))
+		# sess.run(tf.assign(oldDeltaWeight2, deltaWeight2))
+		# sess.run(tf.assign(deltaWeight2, tf.subtract(fuzzyBPdeltaW[1], weight2)))
+		# sess.run(tf.assign(weight1, fuzzyBPdeltaW[0]))
+		# sess.run(tf.assign(weight2, fuzzyBPdeltaW[1]))
+		
 		sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
 		convergence = checkConvergence(sess, image, result)
 		print(convergence)

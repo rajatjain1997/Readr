@@ -11,31 +11,33 @@ def vectorMul(a, b):
 def fnet(net):
 	return 1.0 / (1.0 + e**(-4.0*(net-0.5)))
 
-def FuzzyBP(inputs, weights, target):
+def FuzzyBP(inputs, weights, target, session):
 	hidden_inputs = []
-	for i in range(len(weights[0])):
+	for i in range(30):
 		val = 0
 		for m in range(1,len(inputs)+1):
 			if m == len(inputs):
 				val = max(min(inputs), val)
 				break
-			for s in itertools.combinations(range(len(inputs), m)):
-				nval = max([weights[0][i][x] for x in s]) # g(G)
+			for s in itertools.combinations(range(len(inputs)), m):
+				nval = max([session.run(weights[0][x][i]) for x in s]) # g(G)
 				val = max(min([inputs[x] for x in s]+[nval]), val) # minimum of g(G) and x in G
 		hidden_inputs.append(fnet(val))
 
-	output = 0
-	for m in range(1,len(hidden_inputs)+1):
-		if m == len(hidden_inputs):
-			output = max(min(hidden_inputs), output)
-			break
-		for s in itertools.combinations(range(len(hidden_inputs), m)):
-			nval = max([weights[1][i][x] for x in s]) # g(G)
-			output = max(min([hidden_inputs[x] for x in s]+[nval]), output) # minimum of g(G) and x in G
-	output = fnet(output)
+	foutput = []
+	for i in range(10):
+		output = 0
+		for m in range(1,len(hidden_inputs)+1):
+			if m == len(hidden_inputs):
+				output = max(min(hidden_inputs), output)
+				break
+			for s in itertools.combinations(range(len(hidden_inputs), m)):
+				nval = max([weights[1][x][i] for x in s]) # g(G)
+				output = max(min([hidden_inputs[x] for x in s]+[nval]), output) # minimum of g(G) and x in G
+		foutput.append(fnet(output))
 
 	learning_rate = 0.1
-
+	output = np.argmax(foutput)+1
 	if target != output:
 		for i in range(len(weights[0])):
 			for j in range(len(weights[0][i])):
