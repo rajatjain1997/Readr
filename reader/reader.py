@@ -4,6 +4,8 @@ from gainfuzzify import gain
 from fuzzyBP import FuzzyBP
 import tensorflow as tf
 import numpy as np
+import shutil
+import zipfile
 
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("./data/", one_hot=True)
@@ -163,13 +165,13 @@ def reset(sess):
 
 
 def restoreModel(session,fileName):
-    saver = tf.train.Saver()
-    unzip = zipfile.ZipFile("./"+filename+".zip")
+	saver = tf.train.Saver()
+	unzip = zipfile.ZipFile("./"+filename+".zip")
 	unzip.extractall("./temp")
- 	unzip.close()
+	unzip.close()
 	saver.restore(sess,"./temp/"+filename)
 	shutil.rmtree("./temp")
-    return session
+	return session
 
 
 def session():
@@ -178,11 +180,11 @@ def session():
 	return sess
 
 def storeModel(session,fileName):
-    saver = tf.train.Saver()
-    saver.save(session,"./temp/"+filename)
+	saver = tf.train.Saver()
+	saver.save(session,"./temp/"+filename)
 	shutil.make_archive(filename, 'zip', "./temp")
 	shutil.rmtree("./temp")
-    
+
 
 def train(sess, imagepath, actualresult,enableGainFuzzification= True):
 	arr=[]
