@@ -163,8 +163,13 @@ def reset(sess):
 
 def restoreModel(session,fileName):
     saver = tf.train.Saver()
-    saver.restore(session,fileName)
+    unzip = zipfile.ZipFile("./"+filename+".zip")
+	unzip.extractall("./temp")
+ 	unzip.close()
+	saver.restore(sess,"./temp/"+filename)
+	shutil.rmtree("./temp")
     return session
+
 
 def session():
 	sess = tf.Session()
@@ -173,7 +178,10 @@ def session():
 
 def storeModel(session,fileName):
     saver = tf.train.Saver()
-    saver.save(session,fileName)
+    saver.save(session,"./temp/"+filename)
+	shutil.make_archive(filename, 'zip', "./temp")
+	shutil.rmtree("./temp")
+    
 
 def train(sess, imagepath, actualresult,enableGainFuzzification= True):
 	arr=[]
