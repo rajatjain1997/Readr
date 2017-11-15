@@ -31,7 +31,7 @@ def FuzzyBP(inputs, weights, target, session):
 			if m == len(hidden_inputs):
 				output = max(min(hidden_inputs), output)
 				break
-			for s in itertools.combinations(range(len(hidden_inputs), m)):
+			for s in itertools.combinations(range(len(hidden_inputs)), m):
 				nval = max([weights[1][x][i] for x in s]) # g(G)
 				output = max(min([hidden_inputs[x] for x in s]+[nval]), output) # minimum of g(G) and x in G
 		foutput.append(fnet(output))
