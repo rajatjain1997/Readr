@@ -54,26 +54,31 @@ def getTrapMembership (start, tip1, tip2, end, x):
 		return (end - x)/(end - tip2)
 	else:
 		return 0
+def changeSensitivity():
+	global sensitivity
+	print("s=",sensitivity)
+	global inferenceS1
+	global inferenceS2
+	global inferenceZ
+	inferenceS1 = {
+		"NB": partial(getLineMembership, (-1.0/sensitivity), (-2.0/sensitivity)),
+		"NS": partial(getTriangularMembership, (-2.0/sensitivity), (-1.0/sensitivity), (0.0/sensitivity)),
+		"Z":  partial(getTriangularMembership, (-1.0/sensitivity), (0/sensitivity), (1.0/sensitivity)),
+		"PS": partial(getTriangularMembership, (0.0/sensitivity), (1.0/sensitivity), (2.0/sensitivity)),
+		"PB": partial(getLineMembership, (1.0/sensitivity), (2.0/sensitivity))
+	}
 
-inferenceS1 = {
-	"NB": partial(getLineMembership, (-0.010), (-0.020)),
-	"NS": partial(getTriangularMembership, (-0.020), (-0.010), (0.000)),
-	"Z":  partial(getTriangularMembership, (-0.010), (0.000), (0.010)),
-	"PS": partial(getTriangularMembership, (0.000), (0.010), (0.020)),
-	"PB": partial(getLineMembership, (0.010), (0.020))
-}
+	inferenceS2 = {
+		"N": partial(getLineMembership, (0.0/sensitivity), (-1.0/sensitivity)),
+		"Z": partial(getTriangularMembership, (-1.0/sensitivity), (0.0/sensitivity), (1.0/sensitivity)),
+		"P": partial(getLineMembership, (0.0/sensitivity), (1.0/sensitivity))
+	}
 
-inferenceS2 = {
-	"N": partial(getLineMembership, (0.000), (-0.010)),
-	"Z": partial(getTriangularMembership, (-0.010), (0.000), (0.010)),
-	"P": partial(getLineMembership, (0.000), (0.010))
-}
-
-inferenceZ = {
-	"L": partial(getLineMembership, (2.0), (0.0)),
-	"M": partial(getTrapMembership, (0.0), (0.5), (3.5), (4.0)),
-	"H": partial(getLineMembership, (2.0), (4.0))
-}
+	inferenceZ = {
+		"L": partial(getLineMembership, (2.0), (0.0)),
+		"M": partial(getTrapMembership, (0.0), (0.5), (3.5), (4.0)),
+		"H": partial(getLineMembership, (2.0), (4.0))
+	}
 
 rulebase = {
 	"NB": {
@@ -113,6 +118,9 @@ def rule (classS1, classS2):
 	return rulebase[classS1][classS2]
 
 def fuzzify(s1,s2):
+	global inferenceS1
+	global inferenceS2
+	global inferenceZ
 	inferDictS1 = infer(inferenceS1,s1)
 	inferDictS2 = infer(inferenceS2,s2)
 	fuzzifiedMap = {"L": 0, "M": 0, "H": 0}
@@ -148,7 +156,10 @@ def defuzzify(scales,interval,start,end):
 		finalOutputDen = finalOutputDen+max(inferDict.values())
 	return (finalOutputNum/finalOutputDen)
 
-def gain(S1, S2):
+def gain(S1, S2,sens):
+	global sensitivity
+	sensitivity=sens;
+	changeSensitivity()
 	scales = fuzzify(S1, S2)
 	# print(scales)
 	return defuzzify(scales, 1,-2, 6)

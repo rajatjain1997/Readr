@@ -41,4 +41,4 @@ def plotComparison2():
 
 # print(rd.outputCharacter(session, "./test_pics/8.jpg"))
 
-plotComparison2()
+plotComparison()
