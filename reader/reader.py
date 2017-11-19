@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from image_conversion import convert
+# from image_conversion import convert
 from gainfuzzify import gain
 from alphaLearning import alpha
 from fuzzyBP import FuzzyBP
@@ -24,8 +24,8 @@ middle = 30
 # weight2 = tf.Variable(tf.random_normal([middle, 10]))
 # bias2 = tf.Variable(tf.random_normal([1, 10]))
 
-s1 = 0.0;
-s2 = 0.0;
+s1 = tf.constant(0.0);
+s2 = tf.constant(0.0);
 
 weight1 = tf.Variable(tf.truncated_normal([784, middle]))
 bias1 = tf.Variable(tf.truncated_normal([1, middle]))
@@ -68,8 +68,8 @@ s2Abs = tf.reduce_mean(tf.abs(S2))
 s1 = tf.cond((tf.less(s1,0)), lambda: tf.negative(s1Abs), lambda: s1Abs)
 s2 = tf.cond((tf.less(s2,0)), lambda: tf.negative(s2Abs), lambda: s2Abs)
 
-changeS1 = s1 - s1Old;
-changeS2 = s2 - s2Old
+changeS1 = tf.subtract(s1,s1Old);
+changeS2 = tf.subtract(s2,s2Old);
 
 generalResult = [
 	tf.assign(weight1,
@@ -84,39 +84,39 @@ generalResult = [
 							   tf.reduce_mean(deltaBias2, axis=[0]))))
 ]
 
-momentumResult = [
-	tf.assign(weight1,
-			tf.add(weight1, tf.multiply(learningRate, tf.add(deltaWeight1, tf.multiply(momentum, oldDeltaWeight1))))),
-	tf.assign(bias1,
-			tf.add(bias1, tf.multiply(learningRate,
-							   tf.add(tf.reduce_mean(deltaBias1, axis=[0]), tf.multiply(momentum, tf.reduce_mean(oldDeltaBias1, axis=[0])))))),
-	tf.assign(weight2,
-			tf.add(weight2, tf.multiply(learningRate, tf.add(deltaWeight2, tf.multiply(momentum, oldDeltaWeight2))))),
-	tf.assign(bias2,
-			tf.add(bias2, tf.multiply(learningRate,
-							   tf.add(tf.reduce_mean(deltaBias2, axis=[0]), tf.multiply(momentum, tf.reduce_mean(oldDeltaBias2, axis=[0])))))),
-	tf.assign(oldDeltaWeight1, deltaWeight1),
-	tf.assign(oldDeltaBias1, deltaBias1),
-	tf.assign(oldDeltaWeight2, deltaWeight2),
-	tf.assign(oldDeltaBias2, deltaBias2)
-]
-
 # momentumResult = [
 # 	tf.assign(weight1,
-# 			tf.add(weight1, tf.multiply(learningRate, tf.add(deltaWeight1, tf.multiply(momentumHidden, oldDeltaWeight1))))),
+# 			tf.add(weight1, tf.multiply(learningRate, tf.add(deltaWeight1, tf.multiply(momentum, oldDeltaWeight1))))),
 # 	tf.assign(bias1,
 # 			tf.add(bias1, tf.multiply(learningRate,
-# 							   tf.add(tf.reduce_mean(deltaBias1, axis=[0]), tf.multiply(momentumHidden, tf.reduce_mean(oldDeltaBias1, axis=[0])))))),
+# 							   tf.add(tf.reduce_mean(deltaBias1, axis=[0]), tf.multiply(momentum, tf.reduce_mean(oldDeltaBias1, axis=[0])))))),
 # 	tf.assign(weight2,
-# 			tf.add(weight2, tf.multiply(learningRate, tf.add(deltaWeight2, tf.multiply(momentumOutput, oldDeltaWeight2))))),
+# 			tf.add(weight2, tf.multiply(learningRate, tf.add(deltaWeight2, tf.multiply(momentum, oldDeltaWeight2))))),
 # 	tf.assign(bias2,
 # 			tf.add(bias2, tf.multiply(learningRate,
-# 							   tf.add(tf.reduce_mean(deltaBias2, axis=[0]), tf.multiply(momentumOutput, tf.reduce_mean(oldDeltaBias2, axis=[0])))))),
+# 							   tf.add(tf.reduce_mean(deltaBias2, axis=[0]), tf.multiply(momentum, tf.reduce_mean(oldDeltaBias2, axis=[0])))))),
 # 	tf.assign(oldDeltaWeight1, deltaWeight1),
 # 	tf.assign(oldDeltaBias1, deltaBias1),
 # 	tf.assign(oldDeltaWeight2, deltaWeight2),
 # 	tf.assign(oldDeltaBias2, deltaBias2)
 # ]
+
+momentumResult = [
+	tf.assign(weight1,
+			tf.add(weight1, tf.multiply(learningRate, tf.add(deltaWeight1, tf.multiply(momentumHidden, oldDeltaWeight1))))),
+	tf.assign(bias1,
+			tf.add(bias1, tf.multiply(learningRate,
+							   tf.add(tf.reduce_mean(deltaBias1, axis=[0]), tf.multiply(momentumHidden, tf.reduce_mean(oldDeltaBias1, axis=[0])))))),
+	tf.assign(weight2,
+			tf.add(weight2, tf.multiply(learningRate, tf.add(deltaWeight2, tf.multiply(momentumOutput, oldDeltaWeight2))))),
+	tf.assign(bias2,
+			tf.add(bias2, tf.multiply(learningRate,
+							   tf.add(tf.reduce_mean(deltaBias2, axis=[0]), tf.multiply(momentumOutput, tf.reduce_mean(oldDeltaBias2, axis=[0])))))),
+	tf.assign(oldDeltaWeight1, deltaWeight1),
+	tf.assign(oldDeltaBias1, deltaBias1),
+	tf.assign(oldDeltaWeight2, deltaWeight2),
+	tf.assign(oldDeltaBias2, deltaBias2)
+]
 
 acct_mat = tf.equal(tf.argmax(out2, 1), tf.argmax(y, 1))
 acct_res = tf.reduce_sum(tf.cast(acct_mat, tf.float32))
@@ -139,9 +139,9 @@ def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = Tru
 	convergenceOutputArr=[]
 	result = generalResult
 	if(momentumConstant > 0.0):
-		sess.run(tf.assign(momentum, momentumConstant))
-		# sess.run(tf.assign(momentumHidden, momentumConstant))
-		# sess.run(tf.assign(momentumOutput, momentumConstant))
+		# sess.run(tf.assign(momentum, momentumConstant))
+		sess.run(tf.assign(momentumHidden, momentumConstant))
+		sess.run(tf.assign(momentumOutput, momentumConstant))
 		result = momentumResult
 	convergence = 0.0
 	imageDataset = np.array(mnist.train.images[:numTrainingSamples])
@@ -151,14 +151,14 @@ def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = Tru
 	resultDataset = mnist.train.labels[:numTrainingSamples]
 	
 	while convergence < 90.0:
-		l = sess.run([result,s1,s2,s1Old,s2Old], feed_dict = {x: imageDataset,
+		l = sess.run([result,s1,s2,changeS1,changeS2], feed_dict = {x: imageDataset,
 										y : resultDataset})
 		if enableGainFuzzifization:
 			l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
 		# print("beta:", l)
-		# if enableMomentumFuzzification:
-		# 	l = sess.run(tf.assign(momentumHidden, tf.constant(alpha(l[1], l[1]-l[3]), dtype=tf.float32)))
-		# 	l = sess.run(tf.assign(momentumOutput, tf.constant(alpha(l[2], l[2]-l[4]), dtype=tf.float32)))
+		if enableMomentumFuzzification:
+			l = sess.run(tf.assign(momentumHidden, tf.constant(alpha(l[1], l[3]), dtype=tf.float32)))
+			l = sess.run(tf.assign(momentumOutput, tf.constant(alpha(l[2], l[4]), dtype=tf.float32)))
 		convergence = checkConvergence(sess, imageDataset, resultDataset)
 		convergenceOutputArr.append(convergence)
 		print(convergence)
@@ -249,8 +249,8 @@ def train(sess, imagepath, actualresult,enableGainFuzzification= True, enableFuz
 	print("Trained Model with the new image!")
 	return arr
 
-# sess = session()
+sess = session()
 # train(sess,'./../test_pics/8.jpg',8)
 # provideMnistTraining(sess, 10, False)
 # provideMnistTraining(sess, 10)
-# provideMnistTraining(sess, 10000, False, 0.6)
+provideMnistTraining(sess, 10000,False,True, 0.6)
