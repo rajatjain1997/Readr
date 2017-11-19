@@ -40,17 +40,17 @@ def getTrapMembership (start, tip1, tip2, end, x):
 		return 0
 
 inferenceEta = {
-	"Z": partial(getLineMembership, (0.000), (0.0025)),
-	"S": partial(getTriangularMembership, (0.000), (0.0025), (0.005)),
-	"M":  partial(getTriangularMembership, (0.0025), (0.005), (0.0075)),
-	"L": partial(getLineMembership, (0.005), (0.0075))
+	"Z": partial(getLineMembership, (0.0000), (0.00025)),
+	"S": partial(getTriangularMembership, (0.0000), (0.00025), (0.0005)),
+	"M":  partial(getTriangularMembership, (0.00025), (0.0005), (0.00075)),
+	"L": partial(getLineMembership, (0.0005), (0.00075))
 }
 
 inferenceAlpha = {
-	"Z": partial(getLineMembership, (0.000), (0.0025)),
-	"S": partial(getTriangularMembership, (0.000), (0.0025), (0.005)),
-	"M":  partial(getTriangularMembership, (0.0025), (0.005), (0.0075)),
-	"L": partial(getLineMembership, (0.005), (0.0075))
+	"Z": partial(getLineMembership, (0.0000), (0.00025)),
+	"S": partial(getTriangularMembership, (0.0000), (0.00025), (0.0005)),
+	"M":  partial(getTriangularMembership, (0.00025), (0.0005), (0.00075)),
+	"L": partial(getLineMembership, (0.0005), (0.00075))
 }
 
 inferenceChangeError = {
@@ -260,10 +260,10 @@ def defuzzifyEta(scales,interval,start,end):
 
 def alpha(e, ce):
 	scales = fuzzifyAlpha(e, ce)
-	return defuzzifyAlpha(scales, 0.25,0.0, 0.8)
+	return defuzzifyAlpha(scales, 0.25,0.0, 1.0)
 
 def eta(e, ce):
 	scales = fuzzifyEta(e, ce)
-	return defuzzifyEta(scales, 0.25,0.0, 0.8)
+	return defuzzifyEta(scales, 0.25,0.0, 1.0)
 
 # print(eta(-0.25,-0.5))

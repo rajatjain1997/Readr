@@ -41,7 +41,7 @@ def getTrapMembership (start, tip1, tip2, end, x):
 		return 0
 def changeSensitivity():
 	global sensitivity
-	print("s=",sensitivity)
+	# print("s=",sensitivity)
 	global inferenceS1
 	global inferenceS2
 	global inferenceZ
