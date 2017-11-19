@@ -163,7 +163,7 @@ def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = Tru
 		l1 = sess.run([result,s1,s2], feed_dict = {x: imageDataset,
 										y : resultDataset})
 		if enableGainFuzzifization:
-			l = sess.run(tf.assign(beta, tf.constant(gain(l1[1], l1[2]), dtype=tf.float32)))
+			l = sess.run(tf.assign(beta, tf.constant(gain(l1[1], l1[2],100), dtype=tf.float32)))
 		# print("beta:", l)
 		if enableEtaFuzzification:
 			lh = sess.run(tf.assign(learningRateH, tf.constant(eta(l1[1], l1[1]-lprev[0]), dtype=tf.float32)))
@@ -253,8 +253,7 @@ def train(sess, imagepath, actualresult,enableGainFuzzification= True, enableFuz
 			# sess.run(tf.assign(weight1, fuzzyBPdeltaW[0]))
 			# sess.run(tf.assign(weight2, fuzzyBPdeltaW[1]))
 		if enableGainFuzzification:
-			sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
-		
+			sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2],100), dtype=tf.float32)))
 		convergence = checkConvergence(sess, image, result)
 		print(convergence)
 		arr.append(convergence)
