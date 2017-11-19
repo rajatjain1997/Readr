@@ -40,27 +40,37 @@ def getTrapMembership (start, tip1, tip2, end, x):
 		return 0
 
 inferenceEta = {
-	"Z": partial(getLineMembership, (0.0), (0.25)),
-	"S": partial(getTriangularMembership, (0.0), (0.25), (0.5)),
-	"M":  partial(getTriangularMembership, (0.25), (0.5), (0.75)),
-	"L": partial(getLineMembership, (0.5), (0.75))
+	"Z": partial(getLineMembership, (0.000), (0.0025)),
+	"S": partial(getTriangularMembership, (0.000), (0.0025), (0.005)),
+	"M":  partial(getTriangularMembership, (0.0025), (0.005), (0.0075)),
+	"L": partial(getLineMembership, (0.005), (0.0075))
 }
 
 inferenceAlpha = {
-	"Z": partial(getLineMembership, (0.0), (0.25)),
-	"S": partial(getTriangularMembership, (0.0), (0.25), (0.5)),
-	"M":  partial(getTriangularMembership, (0.25), (0.5), (0.75)),
-	"L": partial(getLineMembership, (0.5), (0.75))
+	"Z": partial(getLineMembership, (0.000), (0.0025)),
+	"S": partial(getTriangularMembership, (0.000), (0.0025), (0.005)),
+	"M":  partial(getTriangularMembership, (0.0025), (0.005), (0.0075)),
+	"L": partial(getLineMembership, (0.005), (0.0075))
+}
+
+inferenceChangeError = {
+	"NL": partial(getLineMembership, (-0.0005), (-0.00075)),
+	"NM": partial(getTriangularMembership, (-0.00075), (-0.0005), (-0.00025)),
+	"NS":  partial(getTriangularMembership, (-0.0005), (-0.00025), (0.0000)),
+	"Z": partial(getTriangularMembership, (-0.00025), (0.0000), (0.00025)),
+	"PS":  partial(getTriangularMembership, (0.0000), (0.00025), (0.0005)),
+	"PM": partial(getTriangularMembership, (0.00025), (0.0005), (0.00075)),
+	"PL": partial(getLineMembership, (0.0005), (0.00075))
 }
 
 inferenceError = {
-	"NL": partial(getLineMembership, (-0.5), (-0.75)),
-	"NM": partial(getTriangularMembership, (-0.75), (-0.5), (-0.25)),
-	"NS":  partial(getTriangularMembership, (-0.5), (-0.25), (0.0)),
-	"Z": partial(getTriangularMembership, (-0.25), (0.0), (0.25)),
-	"PS":  partial(getTriangularMembership, (0.0), (0.25), (0.5)),
-	"PM": partial(getTriangularMembership, (0.25), (0.5), (0.75)),
-	"PL": partial(getLineMembership, (0.5), (0.75))
+	"NL": partial(getLineMembership, (-0.0005), (-0.00075)),
+	"NM": partial(getTriangularMembership, (-0.00075), (-0.0005), (-0.00025)),
+	"NS":  partial(getTriangularMembership, (-0.0005), (-0.00025), (0.0000)),
+	"Z": partial(getTriangularMembership, (-0.00025), (0.0000), (0.00025)),
+	"PS":  partial(getTriangularMembership, (0.0000), (0.00025), (0.0005)),
+	"PM": partial(getTriangularMembership, (0.00025), (0.0005), (0.00075)),
+	"PL": partial(getLineMembership, (0.0005), (0.00075))
 }
 
 rulebaseEta = {
@@ -209,7 +219,7 @@ def ruleEta (classE, classCE):
 
 def fuzzifyAlpha(e,ce):
 	inferDictE = infer(inferenceError,e)
-	inferDictCE = infer(inferenceError,ce)
+	inferDictCE = infer(inferenceChangeError,ce)
 	fuzzifiedMap = {"Z": 0, "S": 0, "M": 0, "L": 0}
 
 	for i in inferDictE:
@@ -221,8 +231,6 @@ def fuzzifyAlpha(e,ce):
 def fuzzifyEta(e,ce):
 	inferDictE = infer(inferenceError,e)
 	inferDictCE = infer(inferenceError,ce)
-	print(inferDictE)
-	print(inferDictCE)
 	fuzzifiedMap = {"Z": 0, "S": 0, "M": 0, "L": 0}
 
 	for i in inferDictE:
@@ -252,7 +260,6 @@ def defuzzifyEta(scales,interval,start,end):
 
 def alpha(e, ce):
 	scales = fuzzifyAlpha(e, ce)
-	print(scales)
 	return defuzzifyAlpha(scales, 0.25,0.0, 0.8)
 
 def eta(e, ce):
