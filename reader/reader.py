@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from image_conversion import convert
 from gainfuzzify import gain
+from alphaLearning import alpha
 from fuzzyBP import FuzzyBP
 import tensorflow as tf
 import numpy as np
@@ -15,12 +16,16 @@ y = tf.placeholder(tf.float32, [None, 10])
 learningRate = tf.constant(0.5)
 beta = tf.Variable(1.0)
 momentum = tf.Variable(0.0)
-
+momentumHidden = tf.Variable(0.0)
+momentumOutput = tf.Variable(0.0)
 middle = 30
 # weight1 = tf.Variable(tf.random_normal([784, middle]))
 # bias1 = tf.Variable(tf.random_normal([1, middle]))
 # weight2 = tf.Variable(tf.random_normal([middle, 10]))
 # bias2 = tf.Variable(tf.random_normal([1, 10]))
+
+s1 = 0.0;
+s2 = 0.0;
 
 weight1 = tf.Variable(tf.truncated_normal([784, middle]))
 bias1 = tf.Variable(tf.truncated_normal([1, middle]))
@@ -54,12 +59,17 @@ S1 = tf.multiply(tf.matmul(S2, tf.transpose(weight2)), diffLogSigmoid(net1))
 deltaBias1 = S1
 deltaWeight1 = tf.matmul(tf.transpose(x), S1)
 
+s1Old = s1;
+s2Old = s2;
 s1 = tf.reduce_mean(S1)
 s2 = tf.reduce_mean(S2)
 s1Abs = tf.reduce_mean(tf.abs(S1))
 s2Abs = tf.reduce_mean(tf.abs(S2))
 s1 = tf.cond((tf.less(s1,0)), lambda: tf.negative(s1Abs), lambda: s1Abs)
 s2 = tf.cond((tf.less(s2,0)), lambda: tf.negative(s2Abs), lambda: s2Abs)
+
+changeS1 = s1 - s1Old;
+changeS2 = s2 - s2Old
 
 generalResult = [
 	tf.assign(weight1,
@@ -91,6 +101,23 @@ momentumResult = [
 	tf.assign(oldDeltaBias2, deltaBias2)
 ]
 
+# momentumResult = [
+# 	tf.assign(weight1,
+# 			tf.add(weight1, tf.multiply(learningRate, tf.add(deltaWeight1, tf.multiply(momentumHidden, oldDeltaWeight1))))),
+# 	tf.assign(bias1,
+# 			tf.add(bias1, tf.multiply(learningRate,
+# 							   tf.add(tf.reduce_mean(deltaBias1, axis=[0]), tf.multiply(momentumHidden, tf.reduce_mean(oldDeltaBias1, axis=[0])))))),
+# 	tf.assign(weight2,
+# 			tf.add(weight2, tf.multiply(learningRate, tf.add(deltaWeight2, tf.multiply(momentumOutput, oldDeltaWeight2))))),
+# 	tf.assign(bias2,
+# 			tf.add(bias2, tf.multiply(learningRate,
+# 							   tf.add(tf.reduce_mean(deltaBias2, axis=[0]), tf.multiply(momentumOutput, tf.reduce_mean(oldDeltaBias2, axis=[0])))))),
+# 	tf.assign(oldDeltaWeight1, deltaWeight1),
+# 	tf.assign(oldDeltaBias1, deltaBias1),
+# 	tf.assign(oldDeltaWeight2, deltaWeight2),
+# 	tf.assign(oldDeltaBias2, deltaBias2)
+# ]
+
 acct_mat = tf.equal(tf.argmax(out2, 1), tf.argmax(y, 1))
 acct_res = tf.reduce_sum(tf.cast(acct_mat, tf.float32))
 
@@ -108,11 +135,13 @@ def checkConvergence(sess, image, result):
 							y : result})
 
 
-def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = True, momentumConstant = 0.0):
+def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = True, enableMomentumFuzzification = True,momentumConstant = 0.0):
 	convergenceOutputArr=[]
 	result = generalResult
 	if(momentumConstant > 0.0):
 		sess.run(tf.assign(momentum, momentumConstant))
+		# sess.run(tf.assign(momentumHidden, momentumConstant))
+		# sess.run(tf.assign(momentumOutput, momentumConstant))
 		result = momentumResult
 	convergence = 0.0
 	imageDataset = np.array(mnist.train.images[:numTrainingSamples])
@@ -122,11 +151,14 @@ def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = Tru
 	resultDataset = mnist.train.labels[:numTrainingSamples]
 	
 	while convergence < 90.0:
-		l = sess.run([result,s1,s2], feed_dict = {x: imageDataset,
+		l = sess.run([result,s1,s2,s1Old,s2Old], feed_dict = {x: imageDataset,
 										y : resultDataset})
 		if enableGainFuzzifization:
 			l = sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2]), dtype=tf.float32)))
 		# print("beta:", l)
+		# if enableMomentumFuzzification:
+		# 	l = sess.run(tf.assign(momentumHidden, tf.constant(alpha(l[1], l[1]-l[3]), dtype=tf.float32)))
+		# 	l = sess.run(tf.assign(momentumOutput, tf.constant(alpha(l[2], l[2]-l[4]), dtype=tf.float32)))
 		convergence = checkConvergence(sess, imageDataset, resultDataset)
 		convergenceOutputArr.append(convergence)
 		print(convergence)
