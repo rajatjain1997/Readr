@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
-from tensorflow.python import debug as tf_debug
+# from tensorflow.python import debug as tf_debug
 
 mnist = input_data.read_data_sets("data/", one_hot=True)
 layers = [784, 30, 10]
