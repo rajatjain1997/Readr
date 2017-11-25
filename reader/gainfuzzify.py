@@ -1,8 +1,10 @@
 from functools import partial
 import numpy as np
-import tensorflow as tf
+
+## this module includes functions for the fuzzification and defuzzification of the gain of the activation function
 
 def getTriangularMembership (start, tip, end, x):
+	#computes membership of a point given the parameters of the triangular membership function
 	if (x < start):
 		return 0
 	elif (x <= tip):
@@ -13,6 +15,7 @@ def getTriangularMembership (start, tip, end, x):
 		return 0
 
 def getLineMembership (base, height, x):
+	#computes membership of a point given the parameters of the line membership function
 	if (height > base):
 		if (x < base):
 			return 0
@@ -29,6 +32,7 @@ def getLineMembership (base, height, x):
 			return 0
 
 def getTrapMembership (start, tip1, tip2, end, x):
+	#computes membership of a point given the parameters of the trapezium membership function
 	if (x < start):
 		return 0
 	elif (x <= tip1):
@@ -39,28 +43,40 @@ def getTrapMembership (start, tip1, tip2, end, x):
 		return (end - x)/(end - tip2)
 	else:
 		return 0
+def changeSensitivity():
+	global sensitivity
+	# print("s=",sensitivity)
+	global inferenceS1
+	global inferenceS2
+	global inferenceZ
+	
+	# Gives the membership values of a point in S1(hidden layer error) fuzzy set
+	inferenceS1 = {
+		"NB": partial(getLineMembership, (-1.0/sensitivity), (-2.0/sensitivity)),
+		"NS": partial(getTriangularMembership, (-2.0/sensitivity), (-1.0/sensitivity), (0.0/sensitivity)),
+		"Z":  partial(getTriangularMembership, (-1.0/sensitivity), (0/sensitivity), (1.0/sensitivity)),
+		"PS": partial(getTriangularMembership, (0.0/sensitivity), (1.0/sensitivity), (2.0/sensitivity)),
+		"PB": partial(getLineMembership, (1.0/sensitivity), (2.0/sensitivity))
+	}
 
-inferenceS1 = {
-	"NB": partial(getLineMembership, (-0.010), (-0.020)),
-	"NS": partial(getTriangularMembership, (-0.020), (-0.010), (0.000)),
-	"Z":  partial(getTriangularMembership, (-0.010), (0.000), (0.010)),
-	"PS": partial(getTriangularMembership, (0.000), (0.010), (0.020)),
-	"PB": partial(getLineMembership, (0.010), (0.020))
-}
+	# Gives the membership values of a point in S2(output layer error) fuzzy set
+	inferenceS2 = {
+		"N": partial(getLineMembership, (0.0/sensitivity), (-1.0/sensitivity)),
+		"Z": partial(getTriangularMembership, (-1.0/sensitivity), (0.0/sensitivity), (1.0/sensitivity)),
+		"P": partial(getLineMembership, (0.0/sensitivity), (1.0/sensitivity))
+	}
 
-inferenceS2 = {
-	"N": partial(getLineMembership, (0.000), (-0.010)),
-	"Z": partial(getTriangularMembership, (-0.010), (0.000), (0.010)),
-	"P": partial(getLineMembership, (0.000), (0.010))
-}
+	# Gives the membership values of a point in gain fuzzy set
+	inferenceZ = {
+		"L": partial(getLineMembership, (2.0), (0.0)),
+		"M": partial(getTrapMembership, (0.0), (0.5), (3.5), (4.0)),
+		"H": partial(getLineMembership, (2.0), (4.0))
+	}
 
-inferenceZ = {
-	"L": partial(getLineMembership, (2.0), (0.0)),
-	"M": partial(getTrapMembership, (0.0), (0.5), (3.5), (4.0)),
-	"H": partial(getLineMembership, (2.0), (4.0))
-}
-
+# rulebase given in the research paper
 rulebase = {
+	# key : hidden layer error 
+	# value : a map for which the key is output layer error and the value is the corresponding gain
 	"NB": {
 		"N": "L",
 		"Z": "L",
@@ -89,15 +105,22 @@ rulebase = {
 }
 
 def infer (inferenceList, x, scales = {}):
+	# if scales = {} then returns the membership values of the input point x from the inference map provided in inferenceList
+	# if scales != {} then returns the (membership values*corresponding value in scales) of the input point x from the inference map provided in inferenceList
 	if (scales == {}):
 		return {k: inferenceList[k](x) for k in inferenceList}
 	else:
 		return {k: scales[k]*inferenceList[k](x) for k in inferenceList}
 
 def rule (classS1, classS2):
+	# returns the corresponding gain fired from given hidden layer error and output layer error
 	return rulebase[classS1][classS2]
 
 def fuzzify(s1,s2):
+	# returns a map containing fuzzified outputs for gain with corresponding membership values given hidden layer error and output layer error as input
+	global inferenceS1
+	global inferenceS2
+	global inferenceZ
 	inferDictS1 = infer(inferenceS1,s1)
 	inferDictS2 = infer(inferenceS2,s2)
 	fuzzifiedMap = {"L": 0, "M": 0, "H": 0}
@@ -109,6 +132,7 @@ def fuzzify(s1,s2):
 	return fuzzifiedMap
 
 def defuzzify(scales,interval,start,end):
+	# gives the defuzzified output for gain using centoid defuzzification given fuzzified outputs as scales
 	finalOutputNum = 0.0
 	finalOutputDen = 0.0
 	for z in np.arange(start,end,interval):
@@ -117,6 +141,10 @@ def defuzzify(scales,interval,start,end):
 		finalOutputDen = finalOutputDen+max(inferDict.values())
 	return (finalOutputNum/finalOutputDen)
 
-def gain(S1, S2):
+def gain(S1, S2,sens):
+	# integrates the entire fuzzification-defuzzification process for gain
+	global sensitivity
+	sensitivity=sens;
+	changeSensitivity()
 	scales = fuzzify(S1, S2)
 	return defuzzify(scales, 1,-2, 6)
