@@ -22,10 +22,6 @@ momentumOutput = tf.Variable(0.0)
 middle = 30
 learningRateH = tf.Variable(0.0)
 learningRateO = tf.Variable(0.0)
-# weight1 = tf.Variable(tf.random_normal([784, middle]))
-# bias1 = tf.Variable(tf.random_normal([1, middle]))
-# weight2 = tf.Variable(tf.random_normal([middle, 10]))
-# bias2 = tf.Variable(tf.random_normal([1, 10]))
 
 weight1 = tf.Variable(tf.truncated_normal([784, middle]))
 bias1 = tf.Variable(tf.truncated_normal([1, middle]))
@@ -79,36 +75,6 @@ generalResult = [
 							   tf.reduce_mean(deltaBias2, axis=[0]))))
 ]
 
-# generalResult = [
-# 	tf.assign(weight1,
-# 			tf.add(weight1, tf.multiply(learningRateH, deltaWeight1)))
-#   , tf.assign(bias1,
-# 			tf.add(bias1, tf.multiply(learningRateH,
-# 							   tf.reduce_mean(deltaBias1, axis=[0]))))
-#   , tf.assign(weight2,
-# 			tf.add(weight2, tf.multiply(learningRateO, deltaWeight2)))
-#   , tf.assign(bias2,
-# 			tf.add(bias2, tf.multiply(learningRateO,
-# 							   tf.reduce_mean(deltaBias2, axis=[0]))))
-# ]
-
-# momentumResult = [
-# 	tf.assign(weight1,
-# 			tf.add(weight1, tf.multiply(learningRate, tf.add(deltaWeight1, tf.multiply(momentum, oldDeltaWeight1))))),
-# 	tf.assign(bias1,
-# 			tf.add(bias1, tf.multiply(learningRate,
-# 							   tf.add(tf.reduce_mean(deltaBias1, axis=[0]), tf.multiply(momentum, tf.reduce_mean(oldDeltaBias1, axis=[0])))))),
-# 	tf.assign(weight2,
-# 			tf.add(weight2, tf.multiply(learningRate, tf.add(deltaWeight2, tf.multiply(momentum, oldDeltaWeight2))))),
-# 	tf.assign(bias2,
-# 			tf.add(bias2, tf.multiply(learningRate,
-# 							   tf.add(tf.reduce_mean(deltaBias2, axis=[0]), tf.multiply(momentum, tf.reduce_mean(oldDeltaBias2, axis=[0])))))),
-# 	tf.assign(oldDeltaWeight1, deltaWeight1),
-# 	tf.assign(oldDeltaBias1, deltaBias1),
-# 	tf.assign(oldDeltaWeight2, deltaWeight2),
-# 	tf.assign(oldDeltaBias2, deltaBias2)
-# ]
-
 momentumResult = [
 	tf.assign(weight1,
 			tf.add(weight1, tf.multiply(learningRateH, tf.add(deltaWeight1, tf.multiply(momentumHidden, oldDeltaWeight1))))),
@@ -147,7 +113,6 @@ def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = Tru
 	convergenceOutputArr=[]
 	result = generalResult
 	if(momentumConstant > 0.0):
-		# sess.run(tf.assign(momentum, momentumConstant))
 		sess.run(tf.assign(momentumHidden, momentumConstant))
 		sess.run(tf.assign(momentumOutput, momentumConstant))
 		result = momentumResult
@@ -164,7 +129,6 @@ def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = Tru
 										y : resultDataset})
 		if enableGainFuzzifization:
 			l = sess.run(tf.assign(beta, tf.constant(gain(l1[1], l1[2],100), dtype=tf.float32)))
-		# print("beta:", l)
 		if enableEtaFuzzification:
 			lh = sess.run(tf.assign(learningRateH, tf.constant(eta(l1[1], l1[1]-lprev[0]), dtype=tf.float32)))
 			lo = sess.run(tf.assign(learningRateO, tf.constant(eta(l1[2], l1[2]-lprev[1]), dtype=tf.float32)))
@@ -183,10 +147,7 @@ def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = Tru
 	return convergenceOutputArr
 
 def read(sess, imagepath):
-	# Image conversion goes here
 	image = [convert(imagepath)]
-	# Stil need to test it Coz we sort of don't know the representation of the mnist dataset
-	# leo says that 0 is considered white and 255 is considered black. Chutiya.
 	return sess.run(out2, feed_dict = {x: image})
 
 def outputCharacter(sess, imagepath):
@@ -277,6 +238,3 @@ def train(sess, imagepath, actualresult,enableGainFuzzification= True):
 		arr.append(convergence)
 	print("Trained Model with the new image!")
 	return arr
-# train(sess,'./../test_pics/8.jpg',8)
-# provideMnistTraining(sess, 10, False)
-# provideMnistTraining(sess, 10)
