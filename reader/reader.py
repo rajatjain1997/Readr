@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# from image_conversion import convert
-from gainfuzzify import gain
-from alphaLearning import eta
-from alphaLearning import alpha
-from fuzzyBP import FuzzyBP
+from reader.image_conversion import convert
+from reader.gainfuzzify import gain
+from reader.alphaLearning import eta
+from reader.alphaLearning import alpha
+from reader.fuzzyBP import FuzzyBP
 import tensorflow as tf
 import numpy as np
 import shutil
@@ -33,9 +33,9 @@ weight2 = tf.Variable(tf.truncated_normal([middle, 10]))
 bias2 = tf.Variable(tf.truncated_normal([1, 10]))
 
 oldDeltaWeight1 = tf.Variable(tf.zeros([784, middle], dtype=tf.float32))
-oldDeltaBias1 = tf.Variable(tf.zeros([10, middle], dtype=tf.float32))
+oldDeltaBias1 = tf.Variable(tf.zeros([1, middle], dtype=tf.float32))
 oldDeltaWeight2 = tf.Variable(tf.zeros([middle, 10], dtype=tf.float32))
-oldDeltaBias2 = tf.Variable(tf.zeros([10, 10], dtype=tf.float32))
+oldDeltaBias2 = tf.Variable(tf.zeros([1, 10], dtype=tf.float32))
 
 def logSigmoid(x):
 	return tf.divide(tf.constant(1.0), tf.add(tf.constant(1.0), tf.exp(tf.negative(tf.multiply(beta,x)))))
@@ -66,31 +66,31 @@ s2Abs = tf.reduce_mean(tf.abs(S2))
 s1 = tf.cond((tf.less(s1,0)), lambda: tf.negative(s1Abs), lambda: s1Abs)
 s2 = tf.cond((tf.less(s2,0)), lambda: tf.negative(s2Abs), lambda: s2Abs)
 
-# generalResult = [
-# 	tf.assign(weight1,
-# 			tf.add(weight1, tf.multiply(learningRate, deltaWeight1)))
-#   , tf.assign(bias1,
-# 			tf.add(bias1, tf.multiply(learningRate,
-# 							   tf.reduce_mean(deltaBias1, axis=[0]))))
-#   , tf.assign(weight2,
-# 			tf.add(weight2, tf.multiply(learningRate, deltaWeight2)))
-#   , tf.assign(bias2,
-# 			tf.add(bias2, tf.multiply(learningRate,
-# 							   tf.reduce_mean(deltaBias2, axis=[0]))))
-# ]
-
 generalResult = [
 	tf.assign(weight1,
-			tf.add(weight1, tf.multiply(learningRateH, deltaWeight1)))
+			tf.add(weight1, tf.multiply(learningRate, deltaWeight1)))
   , tf.assign(bias1,
-			tf.add(bias1, tf.multiply(learningRateH,
+			tf.add(bias1, tf.multiply(learningRate,
 							   tf.reduce_mean(deltaBias1, axis=[0]))))
   , tf.assign(weight2,
-			tf.add(weight2, tf.multiply(learningRateO, deltaWeight2)))
+			tf.add(weight2, tf.multiply(learningRate, deltaWeight2)))
   , tf.assign(bias2,
-			tf.add(bias2, tf.multiply(learningRateO,
+			tf.add(bias2, tf.multiply(learningRate,
 							   tf.reduce_mean(deltaBias2, axis=[0]))))
 ]
+
+# generalResult = [
+# 	tf.assign(weight1,
+# 			tf.add(weight1, tf.multiply(learningRateH, deltaWeight1)))
+#   , tf.assign(bias1,
+# 			tf.add(bias1, tf.multiply(learningRateH,
+# 							   tf.reduce_mean(deltaBias1, axis=[0]))))
+#   , tf.assign(weight2,
+# 			tf.add(weight2, tf.multiply(learningRateO, deltaWeight2)))
+#   , tf.assign(bias2,
+# 			tf.add(bias2, tf.multiply(learningRateO,
+# 							   tf.reduce_mean(deltaBias2, axis=[0]))))
+# ]
 
 # momentumResult = [
 # 	tf.assign(weight1,
@@ -230,7 +230,35 @@ def storeModel(session,filename):
 	shutil.rmtree("./temp")
 
 
-def train(sess, imagepath, actualresult,enableGainFuzzification= True, enableFuzzyBP=True):
+def train2(sess, imagepath, actualresult,enableGainFuzzification= True, enableEtaFuzzification=True,enableMomentumFuzzification=True,momentum=0.6):
+	arr=[]
+	image = [convert(imagepath)]
+	result = np.zeros(10)
+	result[actualresult] = 1.0
+	result = [result]
+	convergence = 0.0
+	j = 0
+	l1 = [0.0,0.0,0.0]
+	while(np.amin(np.array(convergence)) < 99.8):
+		j+=1
+		lprev = [l1[1],l1[2]]
+		l1 = sess.run([momentumResult, s1, s2], feed_dict = {x: image,
+										y:result})
+		if enableGainFuzzification:
+			sess.run(tf.assign(beta, tf.constant(gain(l1[1], l1[2],100), dtype=tf.float32)))
+		if enableEtaFuzzification:
+			lh = sess.run(tf.assign(learningRateH, tf.constant(eta(l1[1], l1[1]-lprev[0]), dtype=tf.float32)))
+			lo = sess.run(tf.assign(learningRateO, tf.constant(eta(l1[2], l1[2]-lprev[1]), dtype=tf.float32)))
+		if enableMomentumFuzzification:
+			mh = sess.run(tf.assign(momentumHidden, tf.constant(alpha(l1[1], l1[1]-lprev[0]), dtype=tf.float32)))
+			mo = sess.run(tf.assign(momentumOutput, tf.constant(alpha(l1[2], l1[2]-lprev[1]), dtype=tf.float32)))
+		convergence = checkConvergence(sess, image, result)
+		print(convergence)
+		arr.append(convergence)
+	print("Trained Model with the new image!")
+	return arr
+
+def train(sess, imagepath, actualresult,enableGainFuzzification= True):
 	arr=[]
 	image = [convert(imagepath)]
 	result = np.zeros(10)
@@ -242,16 +270,6 @@ def train(sess, imagepath, actualresult,enableGainFuzzification= True, enableFuz
 		j+=1
 		l = sess.run([generalResult, s1, s2], feed_dict = {x: image,
 										y:result})
-		
-		if enableFuzzyBP:
-			fuzzyBPWeights = FuzzyBP(image, [l[0][0], l[0][2]], actualresult)
-			sess.run(tf.assign(weight1,tf.constant(fuzzyBPWeights[0])))
-			sess.run(tf.assign(weight2,tf.constant(fuzzyBPWeights[1])))
-			# sess.run(tf.assign(oldDeltaWeight1, deltaWeight1))
-			# sess.run(tf.assign(oldDeltaWeight2, deltaWeight2))
-			# sess.run(tf.assign(deltaWeight2, tf.subtract(fuzzyBPdeltaW[1], weight2)))
-			# sess.run(tf.assign(weight1, fuzzyBPdeltaW[0]))
-			# sess.run(tf.assign(weight2, fuzzyBPdeltaW[1]))
 		if enableGainFuzzification:
 			sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2],100), dtype=tf.float32)))
 		convergence = checkConvergence(sess, image, result)
@@ -259,9 +277,6 @@ def train(sess, imagepath, actualresult,enableGainFuzzification= True, enableFuz
 		arr.append(convergence)
 	print("Trained Model with the new image!")
 	return arr
-
-sess = session()
 # train(sess,'./../test_pics/8.jpg',8)
 # provideMnistTraining(sess, 10, False)
 # provideMnistTraining(sess, 10)
-provideMnistTraining(sess, 10,False,True, True,0.6)

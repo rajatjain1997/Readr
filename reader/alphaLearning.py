@@ -47,18 +47,18 @@ def getTrapMembership (start, tip1, tip2, end, x):
 
 # Gives the membership values of a point in Eta(learning rate) fuzzy set
 inferenceEta = {
-	"Z": partial(getLineMembership, (0.000), (0.0025)),
-	"S": partial(getTriangularMembership, (0.000), (0.0025), (0.005)),
-	"M":  partial(getTriangularMembership, (0.0025), (0.005), (0.0075)),
-	"L": partial(getLineMembership, (0.005), (0.0075))
+	"Z": partial(getLineMembership, (0.0000), (0.00025)),
+	"S": partial(getTriangularMembership, (0.0000), (0.00025), (0.0005)),
+	"M":  partial(getTriangularMembership, (0.00025), (0.0005), (0.00075)),
+	"L": partial(getLineMembership, (0.0005), (0.00075))
 }
 
 # Gives the membership values of a point in Alpha(momentum constant) fuzzy set
 inferenceAlpha = {
-	"Z": partial(getLineMembership, (0.000), (0.0025)),
-	"S": partial(getTriangularMembership, (0.000), (0.0025), (0.005)),
-	"M":  partial(getTriangularMembership, (0.0025), (0.005), (0.0075)),
-	"L": partial(getLineMembership, (0.005), (0.0075))
+	"Z": partial(getLineMembership, (0.0000), (0.00025)),
+	"S": partial(getTriangularMembership, (0.0000), (0.00025), (0.0005)),
+	"M":  partial(getTriangularMembership, (0.00025), (0.0005), (0.00075)),
+	"L": partial(getLineMembership, (0.0005), (0.00075))
 }
 
 # Gives the membership values of a point for the change in error fuzzy set
@@ -285,9 +285,9 @@ def defuzzifyEta(scales,interval,start,end):
 def alpha(e, ce):
 	# integrates the entire fuzzification-defuzzification process for momentum constant
 	scales = fuzzifyAlpha(e, ce)
-	return defuzzifyAlpha(scales, 0.25,0.0, 0.8)
+	return defuzzifyAlpha(scales, 0.25,0.0, 1.0)
 
 def eta(e, ce):
 	# integrates the entire fuzzification-defuzzification process for learning rate
 	scales = fuzzifyEta(e, ce)
-	return defuzzifyEta(scales, 0.25,0.0, 0.8)
+	return defuzzifyEta(scales, 0.25,0.0, 1.0)
