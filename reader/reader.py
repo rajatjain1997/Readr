@@ -208,7 +208,7 @@ def reset(sess):
 	print("Network Reset!")
 
 
-def restoreModel(session,fileName):
+def restoreModel(session,filename):
 	saver = tf.train.Saver()
 	unzip = zipfile.ZipFile("./"+filename+".zip")
 	unzip.extractall("./temp")
@@ -223,7 +223,7 @@ def session():
 	sess.run(tf.global_variables_initializer())
 	return sess
 
-def storeModel(session,fileName):
+def storeModel(session,filename):
 	saver = tf.train.Saver()
 	saver.save(session,"./temp/"+filename)
 	shutil.make_archive(filename, 'zip', "./temp")
