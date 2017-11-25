@@ -20,8 +20,8 @@ momentum = tf.Variable(0.0)
 momentumHidden = tf.Variable(0.0)
 momentumOutput = tf.Variable(0.0)
 middle = 30
-learningRateH = tf.Variable(0.0)
-learningRateO = tf.Variable(0.0)
+learningRateH = tf.Variable(0.5)
+learningRateO = tf.Variable(0.5)
 
 weight1 = tf.Variable(tf.truncated_normal([784, middle]))
 bias1 = tf.Variable(tf.truncated_normal([1, middle]))

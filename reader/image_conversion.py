@@ -17,6 +17,7 @@ def displayImage():
 	plt.show()
 
 def applyThreshhold(th):
+	# this function sets all the pixels values with intensity higher than "th" to 255 and lower to 0
 	for i in range(img.shape[0]):
 		for j in range(img.shape[1]):
 			if img[i][j]>th:
@@ -25,6 +26,9 @@ def applyThreshhold(th):
 				img[i][j]=0
 
 def removeEmptyRows():
+	# This function is used to remove the white pages spaces above and below the written character in the image.
+	# It ,by default, leaves 10 white page spaces above and below the written character.
+	# Those extra 10 spaces are deliberately left out which will come handy while resizing the image.
 	global img
 	mark=-1
 	for i in range(img.shape[0]):
@@ -52,6 +56,7 @@ def removeEmptyRows():
 	#print(img.shape)
 
 def removeEmptyColumns():
+	# Similar to removeEmptyRows(). It just removes columns.
 	global img
 	mark=-1
 	for i in range(img.shape[1]):
@@ -76,6 +81,7 @@ def removeEmptyColumns():
 	img=img[:,0:mark]
 
 def increaseWidth():
+	# Colors all the surrounding pixels of a pixel with the same color as the pixel.
 	global img
 	#print(img.shape)
 	tempImg=np.copy(img)
@@ -99,7 +105,7 @@ def resizeImage():
 	img=misc.imresize(img,(28,28),interp='cubic')
 
 def invert():
-	# this became necessary as leo consider 0 as white and 255 as black. Chutiya sala
+	# this became necessary as leo considers 0 as white and 255 as black.
 	global img
 	for i in range(img.shape[0]):
 		for j in range(img.shape[1]):
@@ -109,6 +115,7 @@ def invert():
 				img[i][j]=0
 
 def convertToRowMajor():
+	# this function converts the complete two 2 dimensional image into a 1D array.
 	global img
 	x=np.zeros(784)
 	k=0
@@ -119,6 +126,7 @@ def convertToRowMajor():
 	return x
 
 def convert(filename):
+	# This is the main function
 	global img
 	readGrayScaleImage(filename)
 	applyThreshhold(100)
