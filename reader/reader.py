@@ -109,7 +109,7 @@ def checkConvergence(sess, image, result):
 							y : result})
 
 
-def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = True, enableEtaFuzzification = True, enableMomentumFuzzification=True, momentumConstant = 0.0):
+def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = True, enableEtaFuzzification = False, enableMomentumFuzzification = False, momentumConstant = 0.0):
 	convergenceOutputArr=[]
 	result = generalResult
 	if(momentumConstant > 0.0):
@@ -191,35 +191,35 @@ def storeModel(session,filename):
 	shutil.rmtree("./temp")
 
 
-def train2(sess, imagepath, actualresult,enableGainFuzzification= True, enableEtaFuzzification=True,enableMomentumFuzzification=True,momentum=0.6):
-	arr=[]
-	image = [convert(imagepath)]
-	result = np.zeros(10)
-	result[actualresult] = 1.0
-	result = [result]
-	convergence = 0.0
-	j = 0
-	l1 = [0.0,0.0,0.0]
-	while(np.amin(np.array(convergence)) < 99.8):
-		j+=1
-		lprev = [l1[1],l1[2]]
-		l1 = sess.run([momentumResult, s1, s2], feed_dict = {x: image,
-										y:result})
-		if enableGainFuzzification:
-			sess.run(tf.assign(beta, tf.constant(gain(l1[1], l1[2],100), dtype=tf.float32)))
-		if enableEtaFuzzification:
-			lh = sess.run(tf.assign(learningRateH, tf.constant(eta(l1[1], l1[1]-lprev[0]), dtype=tf.float32)))
-			lo = sess.run(tf.assign(learningRateO, tf.constant(eta(l1[2], l1[2]-lprev[1]), dtype=tf.float32)))
-		if enableMomentumFuzzification:
-			mh = sess.run(tf.assign(momentumHidden, tf.constant(alpha(l1[1], l1[1]-lprev[0]), dtype=tf.float32)))
-			mo = sess.run(tf.assign(momentumOutput, tf.constant(alpha(l1[2], l1[2]-lprev[1]), dtype=tf.float32)))
-		convergence = checkConvergence(sess, image, result)
-		print(convergence)
-		arr.append(convergence)
-	print("Trained Model with the new image!")
-	return arr
+# def train2(sess, imagepath, actualresult, enableGainFuzzification= True, enableEtaFuzzification=True, enableMomentumFuzzification=True, momentum=0.6):
+# 	arr=[]
+# 	image = [convert(imagepath)]
+# 	result = np.zeros(10)
+# 	result[actualresult] = 1.0
+# 	result = [result]
+# 	convergence = 0.0
+# 	j = 0
+# 	l1 = [0.0,0.0,0.0]
+# 	while(np.amin(np.array(convergence)) < 99.8):
+# 		j+=1
+# 		lprev = [l1[1],l1[2]]
+# 		l1 = sess.run([momentumResult, s1, s2], feed_dict = {x: image,
+# 										y:result})
+# 		if enableGainFuzzification:
+# 			sess.run(tf.assign(beta, tf.constant(gain(l1[1], l1[2],100), dtype=tf.float32)))
+# 		if enableEtaFuzzification:
+# 			lh = sess.run(tf.assign(learningRateH, tf.constant(eta(l1[1], l1[1]-lprev[0]), dtype=tf.float32)))
+# 			lo = sess.run(tf.assign(learningRateO, tf.constant(eta(l1[2], l1[2]-lprev[1]), dtype=tf.float32)))
+# 		if enableMomentumFuzzification:
+# 			mh = sess.run(tf.assign(momentumHidden, tf.constant(alpha(l1[1], l1[1]-lprev[0]), dtype=tf.float32)))
+# 			mo = sess.run(tf.assign(momentumOutput, tf.constant(alpha(l1[2], l1[2]-lprev[1]), dtype=tf.float32)))
+# 		convergence = checkConvergence(sess, image, result)
+# 		print(convergence)
+# 		arr.append(convergence)
+# 	print("Trained Model with the new image!")
+# 	return arr
 
-def train(sess, imagepath, actualresult,enableGainFuzzification= True):
+def train(sess, imagepath, actualresult, enableGainFuzzification= True):
 	arr=[]
 	image = [convert(imagepath)]
 	result = np.zeros(10)
@@ -232,7 +232,7 @@ def train(sess, imagepath, actualresult,enableGainFuzzification= True):
 		l = sess.run([generalResult, s1, s2], feed_dict = {x: image,
 										y:result})
 		if enableGainFuzzification:
-			sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2],100), dtype=tf.float32)))
+			sess.run(tf.assign(beta, tf.constant(gain(l[1], l[2], 100), dtype=tf.float32)))
 		convergence = checkConvergence(sess, image, result)
 		print(convergence)
 		arr.append(convergence)
