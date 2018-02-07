@@ -109,42 +109,42 @@ def checkConvergence(sess, image, result):
 							y : result})
 
 
-def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = True, enableEtaFuzzification = False, enableMomentumFuzzification = False, momentumConstant = 0.0):
-	convergenceOutputArr=[]
-	result = generalResult
-	if(momentumConstant > 0.0):
-		sess.run(tf.assign(momentumHidden, momentumConstant))
-		sess.run(tf.assign(momentumOutput, momentumConstant))
-		result = momentumResult
-	convergence = 0.0
-	imageDataset = np.array(mnist.train.images[:numTrainingSamples])
-	indices = imageDataset > 0.5
-	imageDataset = np.zeros_like(imageDataset)
-	imageDataset[indices] = 1
-	resultDataset = mnist.train.labels[:numTrainingSamples]
-	l1 = [0.0,0.0,0.0]
-	while convergence < 90.0:
-		lprev = [l1[1],l1[2]]
-		l1 = sess.run([result,s1,s2], feed_dict = {x: imageDataset,
-										y : resultDataset})
-		if enableGainFuzzifization:
-			l = sess.run(tf.assign(beta, tf.constant(gain(l1[1], l1[2],100), dtype=tf.float32)))
-		if enableEtaFuzzification:
-			lh = sess.run(tf.assign(learningRateH, tf.constant(eta(l1[1], l1[1]-lprev[0]), dtype=tf.float32)))
-			lo = sess.run(tf.assign(learningRateO, tf.constant(eta(l1[2], l1[2]-lprev[1]), dtype=tf.float32)))
-		if enableMomentumFuzzification:
-			mh = sess.run(tf.assign(momentumHidden, tf.constant(alpha(l1[1], l1[1]-lprev[0]), dtype=tf.float32)))
-			mo = sess.run(tf.assign(momentumOutput, tf.constant(alpha(l1[2], l1[2]-lprev[1]), dtype=tf.float32)))
-		convergence = checkConvergence(sess, imageDataset, resultDataset)
-		convergenceOutputArr.append(convergence)
-		print(convergence)
+# def provideMnistTraining(sess, numTrainingSamples, enableGainFuzzifization = True, enableEtaFuzzification = False, enableMomentumFuzzification = False, momentumConstant = 0.0):
+# 	convergenceOutputArr=[]
+# 	result = generalResult
+# 	if(momentumConstant > 0.0):
+# 		sess.run(tf.assign(momentumHidden, momentumConstant))
+# 		sess.run(tf.assign(momentumOutput, momentumConstant))
+# 		result = momentumResult
+# 	convergence = 0.0
+# 	imageDataset = np.array(mnist.train.images[:numTrainingSamples])
+# 	indices = imageDataset > 0.5
+# 	imageDataset = np.zeros_like(imageDataset)
+# 	imageDataset[indices] = 1
+# 	resultDataset = mnist.train.labels[:numTrainingSamples]
+# 	l1 = [0.0,0.0,0.0]
+# 	while convergence < 90.0:
+# 		lprev = [l1[1],l1[2]]
+# 		l1 = sess.run([result,s1,s2], feed_dict = {x: imageDataset,
+# 										y : resultDataset})
+# 		if enableGainFuzzifization:
+# 			l = sess.run(tf.assign(beta, tf.constant(gain(l1[1], l1[2],100), dtype=tf.float32)))
+# 		if enableEtaFuzzification:
+# 			lh = sess.run(tf.assign(learningRateH, tf.constant(eta(l1[1], l1[1]-lprev[0]), dtype=tf.float32)))
+# 			lo = sess.run(tf.assign(learningRateO, tf.constant(eta(l1[2], l1[2]-lprev[1]), dtype=tf.float32)))
+# 		if enableMomentumFuzzification:
+# 			mh = sess.run(tf.assign(momentumHidden, tf.constant(alpha(l1[1], l1[1]-lprev[0]), dtype=tf.float32)))
+# 			mo = sess.run(tf.assign(momentumOutput, tf.constant(alpha(l1[2], l1[2]-lprev[1]), dtype=tf.float32)))
+# 		convergence = checkConvergence(sess, imageDataset, resultDataset)
+# 		convergenceOutputArr.append(convergence)
+# 		print(convergence)
 	
-	print(sess.run(conv_mat, feed_dict = {
-		x: imageDataset,
-		y: resultDataset
-		}))
-	print("MNIST training complete")
-	return convergenceOutputArr
+# 	print(sess.run(conv_mat, feed_dict = {
+# 		x: imageDataset,
+# 		y: resultDataset
+# 		}))
+# 	print("MNIST training complete")
+# 	return convergenceOutputArr
 
 def read(sess, imagepath):
 	image = [convert(imagepath)]
