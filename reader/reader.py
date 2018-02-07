@@ -9,9 +9,6 @@ import numpy as np
 import shutil
 import zipfile
 
-from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets("./data/", one_hot=True)
-
 def logSigmoid(x):
 	return tf.divide(tf.constant(1.0), tf.add(tf.constant(1.0), tf.exp(tf.negative(tf.multiply(beta,x)))))
 

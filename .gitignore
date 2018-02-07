@@ -1,4 +1,3 @@
-data/
 *.pyc
 reader/__pycache__
 models/
