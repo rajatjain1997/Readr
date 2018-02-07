@@ -148,3 +148,5 @@ def gain(S1, S2,sens):
 	changeSensitivity()
 	scales = fuzzify(S1, S2)
 	return defuzzify(scales, 1,-2, 6)
+
+# print(gain(1.0,1.0,1))
