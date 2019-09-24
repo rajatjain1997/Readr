@@ -14,7 +14,7 @@ convergence['L'] = fuzz.trapmf(convergence.universe, [0.0, 0.0, 0.4, 0.5])
 convergence['M'] = fuzz.trapmf(convergence.universe, [0.4, 0.5, 0.7, 0.8])
 convergence['H'] = fuzz.trapmf(convergence.universe, [0.7, 0.8, 1.0, 1.0])
 
-z['L'] = fuzz.trimf(z.universe, [-10.0, -10.0, -10.0, -10.0])
+z['L'] = fuzz.trapmf(z.universe, [-10.0, -10.0, -10.0, -10.0])
 z['M'] = fuzz.trapmf(z.universe, [0.0, 0.0, 0.0, 0.0])
 z['H'] = fuzz.trapmf(z.universe, [10.0, 10.0, 10.0, 10.0])
 z.view()
